@@ -1,18 +1,18 @@
 "use client";
 
 import React, { useState } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
-  DesktopOutlined,
-  FileOutlined,
   PieChartOutlined,
-  TeamOutlined,
-  UserOutlined,
   BellOutlined,
   LogoutOutlined,
   SettingOutlined,
   CarOutlined,
-  IdcardOutlined,
+  TeamOutlined,
   EnvironmentOutlined,
+  UserOutlined,
+  FileOutlined,
 } from "@ant-design/icons";
 import type { MenuProps } from "antd";
 import { Breadcrumb, Layout, Menu, theme, Button, Space, Avatar, Badge } from "antd";
@@ -36,13 +36,13 @@ function getItem(
 }
 
 const items: MenuItem[] = [
-  getItem("Dashboard", "1", <PieChartOutlined />),
-  getItem("Transportistas", "2", <CarOutlined />),
-  getItem("Pasajeros", "3", <TeamOutlined />),
-  getItem("Rutas", "4", <EnvironmentOutlined />),
-  getItem("Notificaciones", "5", <BellOutlined />),
-  getItem("Reportes", "6", <FileOutlined />),
-  getItem("Configuración", "7", <SettingOutlined />),
+  getItem(<Link href="/">Dashboard</Link>, "/", <PieChartOutlined />),
+  getItem(<Link href="/drivers">Transportistas</Link>, "/drivers", <CarOutlined />),
+  getItem(<Link href="/passengers">Pasajeros</Link>, "/passengers", <TeamOutlined />),
+  getItem(<Link href="/routes">Rutas</Link>, "/routes", <EnvironmentOutlined />),
+  getItem(<Link href="/notifications">Notificaciones</Link>, "/notifications", <BellOutlined />),
+  getItem(<Link href="/reports">Reportes</Link>, "/reports", <FileOutlined />),
+  getItem(<Link href="/settings">Configuración</Link>, "/settings", <SettingOutlined />),
 ];
 
 interface MainLayoutProps {
@@ -51,9 +51,19 @@ interface MainLayoutProps {
 
 const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   const [collapsed, setCollapsed] = useState(false);
+  const pathname = usePathname();
   const {
     token: { colorBgContainer, borderRadiusLG },
   } = theme.useToken();
+
+  // Obtener el nombre de la página actual para el breadcrumb
+  const getPageName = () => {
+    const item = items.find((i) => i?.key === pathname);
+    if (!item) return "Dashboard";
+    // Extraer el texto del label que es un Link
+    const label = item.label as React.ReactElement;
+    return label.props.children;
+  };
 
   return (
     <Layout style={{ minHeight: "100vh" }}>
@@ -73,7 +83,12 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
         >
           {collapsed ? "RS" : "RutaSegura"}
         </div>
-        <Menu theme="dark" defaultSelectedKeys={["1"]} mode="inline" items={items} />
+        <Menu 
+          theme="dark" 
+          selectedKeys={[pathname]} 
+          mode="inline" 
+          items={items} 
+        />
       </Sider>
       <Layout>
         <Header
@@ -87,7 +102,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
         >
           <Breadcrumb style={{ margin: "16px 0" }}>
             <Breadcrumb.Item>Admin</Breadcrumb.Item>
-            <Breadcrumb.Item>Dashboard</Breadcrumb.Item>
+            <Breadcrumb.Item>{getPageName()}</Breadcrumb.Item>
           </Breadcrumb>
           <Space size="large">
             <Badge count={5}>
