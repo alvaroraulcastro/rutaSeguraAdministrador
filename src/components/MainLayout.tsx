@@ -12,6 +12,7 @@ import {
   TeamOutlined,
   EnvironmentOutlined,
   UserOutlined,
+  FileOutlined,
 } from "@ant-design/icons";
 import type { MenuProps } from "antd";
 import { Breadcrumb, Layout, Menu, theme, Button, Space, Avatar, Badge } from "antd";
