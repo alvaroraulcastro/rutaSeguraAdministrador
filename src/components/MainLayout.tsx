@@ -2,7 +2,8 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   PieChartOutlined,
   BellOutlined,
@@ -52,6 +53,8 @@ interface MainLayoutProps {
 const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   const [collapsed, setCollapsed] = useState(false);
   const pathname = usePathname();
+  const router = useRouter();
+  const { user, logout } = useAuth();
   const {
     token: { colorBgContainer, borderRadiusLG },
   } = theme.useToken();
@@ -100,19 +103,29 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
             alignItems: "center",
           }}
         >
-          <Breadcrumb style={{ margin: "16px 0" }}>
-            <Breadcrumb.Item>Admin</Breadcrumb.Item>
-            <Breadcrumb.Item>{getPageName()}</Breadcrumb.Item>
-          </Breadcrumb>
+          <Breadcrumb
+            style={{ margin: "16px 0" }}
+            items={[
+              { title: "Admin" },
+              { title: getPageName() },
+            ]}
+          />
           <Space size="large">
             <Badge count={5}>
               <Button type="text" icon={<BellOutlined />} />
             </Badge>
             <Space>
               <Avatar icon={<UserOutlined />} />
-              <span>Administrador</span>
+              <span>{user?.name ?? "Administrador"}</span>
             </Space>
-            <Button type="text" icon={<LogoutOutlined />}>
+            <Button
+              type="text"
+              icon={<LogoutOutlined />}
+              onClick={() => {
+                logout();
+                router.push("/login");
+              }}
+            >
               Salir
             </Button>
           </Space>

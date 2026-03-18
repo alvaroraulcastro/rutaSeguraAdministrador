@@ -10,8 +10,6 @@ import {
   ArrowUpOutlined,
   ArrowDownOutlined,
 } from "@ant-design/icons";
-import MainLayout from "@/components/MainLayout";
-
 const { Title } = Typography;
 
 const columns = [
@@ -74,22 +72,22 @@ const data = [
 
 export default function Home() {
   return (
-    <MainLayout>
+    <>
       <Title level={2}>Dashboard</Title>
       
       <Row gutter={16}>
         <Col span={6}>
-          <Card bordered={false}>
+          <Card variant="borderless">
             <Statistic
               title="Rutas Activas"
               value={12}
               prefix={<CarOutlined />}
-              valueStyle={{ color: "#3f8600" }}
+              styles={{ content: { color: "#3f8600" } }}
             />
           </Card>
         </Col>
         <Col span={6}>
-          <Card bordered={false}>
+          <Card variant="borderless">
             <Statistic
               title="Pasajeros Totales"
               value={156}
@@ -98,25 +96,25 @@ export default function Home() {
           </Card>
         </Col>
         <Col span={6}>
-          <Card bordered={false}>
+          <Card variant="borderless">
             <Statistic
               title="Notificaciones Hoy"
               value={842}
               prefix={<BellOutlined />}
               suffix={<ArrowUpOutlined />}
-              valueStyle={{ color: "#1677ff" }}
+              styles={{ content: { color: "#1677ff" } }}
             />
           </Card>
         </Col>
         <Col span={6}>
-          <Card bordered={false}>
+          <Card variant="borderless">
             <Statistic
               title="Cumplimiento"
               value={98.5}
               precision={1}
               prefix={<EnvironmentOutlined />}
               suffix="%"
-              valueStyle={{ color: "#3f8600" }}
+              styles={{ content: { color: "#3f8600" } }}
             />
           </Card>
         </Col>
@@ -126,6 +124,6 @@ export default function Home() {
         <Title level={4}>Estado de Rutas en Tiempo Real</Title>
         <Table columns={columns} dataSource={data} />
       </div>
-    </MainLayout>
+    </>
   );
 }
