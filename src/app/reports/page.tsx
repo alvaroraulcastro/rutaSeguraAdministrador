@@ -1,16 +1,29 @@
 "use client";
 
-import React from "react";
-import { Row, Col, Card, Statistic, Table, Typography, Progress } from "antd";
+import React, { useState } from "react";
 import {
-  ArrowUpOutlined,
+  Row,
+  Col,
+  Card,
+  Statistic,
+  Table,
+  Typography,
+  Progress,
+  Tag,
+  Select,
+  DatePicker,
+  Button,
+  Space,
+} from "antd";
+import {
   CheckCircleOutlined,
   WarningOutlined,
   ClockCircleOutlined,
+  FileExcelOutlined,
+  FilePdfOutlined,
 } from "@ant-design/icons";
-import MainLayout from "@/components/MainLayout";
-
 const { Title, Text } = Typography;
+const { RangePicker } = DatePicker;
 
 const columns = [
   {
@@ -41,69 +54,72 @@ const columns = [
     title: "Puntualidad",
     dataIndex: "punctuality",
     key: "punctuality",
-    render: (value: number) => (
-      <Progress percent={value} size="small" />
-    ),
+    render: (value: number) => <Progress percent={value} size="small" style={{ margin: 0, minWidth: 100 }} />,
   },
 ];
 
 const data = [
-  {
-    key: "1",
-    date: "2026-03-16",
-    totalRoutes: 45,
-    completed: 45,
-    incidents: 0,
-    punctuality: 98,
-  },
-  {
-    key: "2",
-    date: "2026-03-15",
-    totalRoutes: 45,
-    completed: 42,
-    incidents: 3,
-    punctuality: 92,
-  },
-  {
-    key: "3",
-    date: "2026-03-14",
-    totalRoutes: 40,
-    completed: 40,
-    incidents: 1,
-    punctuality: 95,
-  },
+  { key: "1", date: "2026-03-16", totalRoutes: 45, completed: 45, incidents: 0, punctuality: 98 },
+  { key: "2", date: "2026-03-15", totalRoutes: 45, completed: 42, incidents: 3, punctuality: 92 },
+  { key: "3", date: "2026-03-14", totalRoutes: 40, completed: 40, incidents: 1, punctuality: 95 },
+  { key: "4", date: "2026-03-13", totalRoutes: 42, completed: 41, incidents: 2, punctuality: 94 },
+  { key: "5", date: "2026-03-12", totalRoutes: 38, completed: 38, incidents: 0, punctuality: 100 },
 ];
 
 export default function ReportsPage() {
+  const [period, setPeriod] = useState<string>("7");
+
   return (
-    <MainLayout>
-      <Title level={2}>Reportes Operativos</Title>
-      
+    <>
+      <div style={{ marginBottom: 24, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 16 }}>
+        <div>
+          <Title level={2} style={{ margin: 0 }}>
+            Reportes Operativos
+          </Title>
+          <Text type="secondary">Resumen de eficiencia, puntualidad e incidencias.</Text>
+        </div>
+        <Space>
+          <Select
+            value={period}
+            onChange={setPeriod}
+            style={{ width: 140 }}
+            options={[
+              { value: "7", label: "Últimos 7 días" },
+              { value: "30", label: "Últimos 30 días" },
+              { value: "90", label: "Últimos 90 días" },
+            ]}
+          />
+          <RangePicker />
+          <Button icon={<FileExcelOutlined />}>Excel</Button>
+          <Button icon={<FilePdfOutlined />}>PDF</Button>
+        </Space>
+      </div>
+
       <Row gutter={[16, 16]}>
-        <Col span={8}>
-          <Card bordered={false}>
+        <Col xs={24} sm={8}>
+          <Card>
             <Statistic
               title="Eficiencia de Rutas"
               value={96.5}
               precision={2}
-              valueStyle={{ color: "#3f8600" }}
+              styles={{ content: { color: "#3f8600" } }}
               prefix={<CheckCircleOutlined />}
               suffix="%"
             />
           </Card>
         </Col>
-        <Col span={8}>
-          <Card bordered={false}>
+        <Col xs={24} sm={8}>
+          <Card>
             <Statistic
-              title="Incidencias (Mensual)"
+              title="Incidencias (Mes)"
               value={4}
-              valueStyle={{ color: "#cf1322" }}
+              styles={{ content: { color: "#cf1322" } }}
               prefix={<WarningOutlined />}
             />
           </Card>
         </Col>
-        <Col span={8}>
-          <Card bordered={false}>
+        <Col xs={24} sm={8}>
+          <Card>
             <Statistic
               title="Tiempo Promedio Viaje"
               value={28}
@@ -114,10 +130,13 @@ export default function ReportsPage() {
         </Col>
       </Row>
 
-      <div style={{ marginTop: 32 }}>
-        <Title level={4}>Historial Diario de Operación</Title>
-        <Table columns={columns} dataSource={data} />
-      </div>
-    </MainLayout>
+      <Card title="Historial diario de operación" style={{ marginTop: 24 }}>
+        <Table
+          columns={columns}
+          dataSource={data}
+          pagination={{ pageSize: 10, showTotal: (t) => `Total: ${t}` }}
+        />
+      </Card>
+    </>
   );
 }
