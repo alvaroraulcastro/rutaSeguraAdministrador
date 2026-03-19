@@ -1,15 +1,12 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 import { actualizarPasajeroSchema } from '@/lib/schemas/pasajero';
 import { validarApiKey } from '@/lib/auth';
 
-interface Params {
-  id: string;
-}
-
-export async function GET(request: Request, { params }: { params: Params }) {
+export async function GET(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await context.params;
     const apiKey = request.headers.get('X-API-Key');
     const usuario = await validarApiKey(apiKey);
 
@@ -18,7 +15,7 @@ export async function GET(request: Request, { params }: { params: Params }) {
     }
 
     const pasajero = await prisma.pasajero.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: { contactos: true },
     });
 
@@ -34,8 +31,9 @@ export async function GET(request: Request, { params }: { params: Params }) {
   }
 }
 
-export async function PUT(request: Request, { params }: { params: Params }) {
+export async function PUT(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await context.params;
     const apiKey = request.headers.get('X-API-Key');
     const usuario = await validarApiKey(apiKey);
 
@@ -47,7 +45,7 @@ export async function PUT(request: Request, { params }: { params: Params }) {
     const { contactos, ...pasajeroData } = actualizarPasajeroSchema.parse(data);
 
     const pasajeroActualizado = await prisma.pasajero.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         ...pasajeroData,
         ...(contactos && { contactos: { deleteMany: {}, create: contactos } }),
@@ -69,8 +67,9 @@ export async function PUT(request: Request, { params }: { params: Params }) {
   }
 }
 
-export async function DELETE(request: Request, { params }: { params: Params }) {
+export async function DELETE(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await context.params;
     const apiKey = request.headers.get('X-API-Key');
     const usuario = await validarApiKey(apiKey);
 
@@ -79,7 +78,7 @@ export async function DELETE(request: Request, { params }: { params: Params }) {
     }
 
     await prisma.pasajero.delete({
-      where: { id: params.id },
+      where: { id },
     });
 
     return new NextResponse(null, { status: 204 });
