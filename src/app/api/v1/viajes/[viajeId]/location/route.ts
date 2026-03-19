@@ -1,15 +1,12 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 import { locationSchema } from '@/lib/schemas/location';
 import { validarApiKey } from '@/lib/auth';
 
-interface Params {
-  viajeId: string;
-}
-
-export async function POST(request: Request, { params }: { params: Params }) {
+export async function POST(request: NextRequest, context: { params: Promise<{ viajeId: string }> }) {
   try {
+    const { viajeId } = await context.params;
     const apiKey = request.headers.get('X-API-Key');
     const usuario = await validarApiKey(apiKey);
 
@@ -23,7 +20,7 @@ export async function POST(request: Request, { params }: { params: Params }) {
     // 1. Verificar que el viaje existe y está en curso
     const viaje = await prisma.viaje.findFirst({
       where: {
-        id: params.viajeId,
+        id: viajeId,
         estado: 'EN_CURSO',
       },
     });
@@ -33,8 +30,8 @@ export async function POST(request: Request, { params }: { params: Params }) {
     }
 
     // 2. Aquí iría la lógica para emitir la ubicación a un servicio de real-time
-    // Por ejemplo: await pusher.trigger(`viaje-${params.viajeId}`, 'update-location', validatedData);
-    console.log(`Ubicación recibida para el viaje ${params.viajeId}:`, validatedData);
+    // Por ejemplo: await pusher.trigger(`viaje-${viajeId}`, 'update-location', validatedData);
+    console.log(`Ubicación recibida para el viaje ${viajeId}:`, validatedData);
 
     // 3. Devolver una respuesta exitosa
     return NextResponse.json({ message: 'Ubicación recibida' });
@@ -43,6 +40,7 @@ export async function POST(request: Request, { params }: { params: Params }) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: error.issues }, { status: 400 });
     }
+    console.error('Error processing location:', error);
     return NextResponse.json({ error: 'Error al procesar la ubicación' }, { status: 500 });
   }
 }
