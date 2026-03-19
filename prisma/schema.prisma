@@ -43,6 +43,7 @@ model Usuario {
   patente   String?
   modelo    String?
   capacidad Int?
+  apiKey    String?  @unique // Hash de la API Key
 
   rutas     Ruta[]
   logs      LogPeticion[]
