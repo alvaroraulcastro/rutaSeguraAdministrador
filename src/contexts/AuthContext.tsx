@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
+import React, { createContext, useContext, useState, useCallback } from "react";
 
 const AUTH_STORAGE_KEY = "rutasegura_admin_user";
 
@@ -21,16 +21,6 @@ type AuthContextType = {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-function loadUser(): User | null {
-  if (typeof window === "undefined") return null;
-  try {
-    const raw = localStorage.getItem(AUTH_STORAGE_KEY);
-    return raw ? (JSON.parse(raw) as User) : null;
-  } catch {
-    return null;
-  }
-}
-
 function saveUser(user: User | null) {
   if (typeof window === "undefined") return;
   if (user) localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(user));
@@ -38,13 +28,20 @@ function saveUser(user: User | null) {
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    setUser(loadUser());
-    setIsLoading(false);
-  }, []);
+  const [user, setUser] = useState<User | null>(() => {
+    if (typeof window !== "undefined") {
+      const raw = localStorage.getItem(AUTH_STORAGE_KEY);
+      if (raw) {
+        try {
+          return JSON.parse(raw) as User;
+        } catch (e) {
+          console.error("Error parsing user from localStorage", e);
+        }
+      }
+    }
+    return null;
+  });
+  const [isLoading] = useState(false);
 
   const login = useCallback(async (emailOrUser: string, password: string) => {
     // Mock: aceptar cualquier email/usuario; contraseña cualquiera para demo

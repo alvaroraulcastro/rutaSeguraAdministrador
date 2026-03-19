@@ -20,7 +20,6 @@ import {
   WhatsAppOutlined,
   BellOutlined,
   CheckCircleOutlined,
-  ClockCircleOutlined,
   UserOutlined,
 } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
@@ -134,7 +133,7 @@ export default function NotificationsPage() {
   const enviados = MOCK_NOTIFICATIONS.filter((n) => n.status === "Enviado").length;
 
   return (
-    <MainLayout>
+    <>
       <Title level={2}>Log de Notificaciones</Title>
       <Text type="secondary" style={{ display: "block", marginBottom: 24 }}>
         Historial de alertas enviadas a pasajeros y contactos de emergencia.
@@ -217,6 +216,6 @@ export default function NotificationsPage() {
           pagination={{ pageSize: 10, showSizeChanger: true, showTotal: (t) => `Total: ${t}` }}
         />
       </Card>
-    </MainLayout>
+    </>
   );
 }

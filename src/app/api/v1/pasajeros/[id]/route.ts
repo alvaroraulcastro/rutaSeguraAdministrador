@@ -29,6 +29,7 @@ export async function GET(request: Request, { params }: { params: Params }) {
     return NextResponse.json(pasajero);
 
   } catch (error) {
+    console.error('Error fetching passenger:', error);
     return NextResponse.json({ error: 'Error al obtener el pasajero' }, { status: 500 });
   }
 }
@@ -63,6 +64,7 @@ export async function PUT(request: Request, { params }: { params: Params }) {
     if (error.code === 'P2025') {
       return NextResponse.json({ error: 'Pasajero no encontrado' }, { status: 404 });
     }
+    console.error('Error updating passenger:', error);
     return NextResponse.json({ error: 'Error al actualizar el pasajero' }, { status: 500 });
   }
 }
@@ -86,6 +88,7 @@ export async function DELETE(request: Request, { params }: { params: Params }) {
     if (error.code === 'P2025') {
       return NextResponse.json({ error: 'Pasajero no encontrado' }, { status: 404 });
     }
+    console.error('Error deleting passenger:', error);
     return NextResponse.json({ error: 'Error al eliminar el pasajero' }, { status: 500 });
   }
 }

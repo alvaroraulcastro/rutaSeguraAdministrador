@@ -24,6 +24,7 @@ export async function GET(request: Request, { params }: { params: Params }) {
     });
     return NextResponse.json(paradas);
   } catch (error) {
+    console.error('Error fetching stops:', error);
     return NextResponse.json({ error: 'Error al obtener las paradas' }, { status: 500 });
   }
 }
@@ -53,6 +54,7 @@ export async function POST(request: Request, { params }: { params: Params }) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: error.issues }, { status: 400 });
     }
+    console.error('Error creating stop:', error);
     return NextResponse.json({ error: 'Error al crear la parada' }, { status: 500 });
   }
 }
@@ -85,6 +87,7 @@ export async function PUT(request: Request, { params }: { params: Params }) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: error.issues }, { status: 400 });
     }
+    console.error('Error reordering stops:', error);
     return NextResponse.json({ error: 'Error al reordenar las paradas' }, { status: 500 });
   }
 }

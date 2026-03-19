@@ -32,6 +32,7 @@ export async function GET(request: Request, { params }: { params: Params }) {
     return NextResponse.json(ruta);
 
   } catch (error) {
+    console.error('Error fetching route:', error);
     return NextResponse.json({ error: 'Error al obtener la ruta' }, { status: 500 });
   }
 }
@@ -63,6 +64,7 @@ export async function PUT(request: Request, { params }: { params: Params }) {
     if (error.code === 'P2025') {
       return NextResponse.json({ error: 'Ruta no encontrada' }, { status: 404 });
     }
+    console.error('Error updating route:', error);
     return NextResponse.json({ error: 'Error al actualizar la ruta' }, { status: 500 });
   }
 }
@@ -87,6 +89,7 @@ export async function DELETE(request: Request, { params }: { params: Params }) {
     if (error.code === 'P2025') {
       return NextResponse.json({ error: 'Ruta no encontrada' }, { status: 404 });
     }
+    console.error('Error deleting route:', error);
     return NextResponse.json({ error: 'Error al eliminar la ruta' }, { status: 500 });
   }
 }

@@ -22,7 +22,6 @@ import {
   GlobalOutlined,
   BellOutlined,
   ApiOutlined,
-  MobileOutlined,
 } from "@ant-design/icons";
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -205,7 +204,7 @@ export default function SettingsPage() {
   ];
 
   return (
-    <MainLayout>
+    <>
       <Title level={2}>Configuración del sistema</Title>
       <Text type="secondary" style={{ display: "block", marginBottom: 24 }}>
         Ajustes generales, notificaciones, seguridad e integraciones.
@@ -214,6 +213,6 @@ export default function SettingsPage() {
       <Card>
         <Tabs items={tabItems} />
       </Card>
-    </MainLayout>
+    </>
   );
 }

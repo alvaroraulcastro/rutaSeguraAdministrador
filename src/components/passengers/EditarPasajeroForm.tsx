@@ -35,14 +35,18 @@ export default function EditarPasajeroForm({ pasajeroId }: EditarPasajeroFormPro
         // Formatear datos para el formulario
         form.setFieldsValue({
           ...data,
-          contactos: data.contactos.map((c: any) => ({
+          contactos: data.contactos.map((c: { nombre: string; telefono: string; canal: string }) => ({
             nombre: c.nombre,
             telefono: c.telefono,
             canal: c.canal,
           })),
         });
-      } catch (err: any) {
-        setError(err.message);
+      } catch (err: unknown) {
+        if (err instanceof Error) {
+          setError(err.message);
+        } else {
+          setError("Ocurrió un error desconocido");
+        }
       } finally {
         setLoading(false);
       }
@@ -50,7 +54,7 @@ export default function EditarPasajeroForm({ pasajeroId }: EditarPasajeroFormPro
     fetchPasajero();
   }, [pasajeroId, form]);
 
-  const onFinish = async (values: any) => {
+  const onFinish = async (values: unknown) => {
     setSubmitting(true);
     try {
       const response = await fetch(`/api/v1/pasajeros/${pasajeroId}`, {
@@ -64,7 +68,10 @@ export default function EditarPasajeroForm({ pasajeroId }: EditarPasajeroFormPro
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error?.[0]?.message || "Error al actualizar el pasajero");
+        const errorMessage = Array.isArray(errorData.error) 
+          ? errorData.error[0]?.message 
+          : errorData.error || "Error al actualizar el pasajero";
+        throw new Error(errorMessage);
       }
 
       notification.success({
@@ -72,11 +79,13 @@ export default function EditarPasajeroForm({ pasajeroId }: EditarPasajeroFormPro
         description: "La información ha sido guardada exitosamente.",
       });
       router.push("/passengers");
-    } catch (err: any) {
-      notification.error({
-        message: "Error",
-        description: err.message,
-      });
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        notification.error({
+          message: "Error",
+          description: err.message,
+        });
+      }
     } finally {
       setSubmitting(false);
     }

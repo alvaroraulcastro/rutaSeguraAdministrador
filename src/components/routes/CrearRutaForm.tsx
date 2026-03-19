@@ -33,8 +33,12 @@ export default function CrearRutaForm() {
         if (!response.ok) throw new Error("No se pudieron cargar los transportistas");
         const data = await response.json();
         setTransportistas(data);
-      } catch (err: any) {
-        setError(err.message);
+      } catch (err: unknown) {
+        if (err instanceof Error) {
+          setError(err.message);
+        } else {
+          setError("Ocurrió un error desconocido");
+        }
       } finally {
         setLoading(false);
       }
@@ -42,7 +46,7 @@ export default function CrearRutaForm() {
     fetchTransportistas();
   }, []);
 
-  const onFinish = async (values: any) => {
+  const onFinish = async (values: { nombre: string; transportistaId: string }) => {
     setSubmitting(true);
     try {
       const response = await fetch("/api/v1/rutas", {
@@ -56,7 +60,10 @@ export default function CrearRutaForm() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error?.[0]?.message || "Error al crear la ruta");
+        const errorMessage = Array.isArray(errorData.error) 
+          ? errorData.error[0]?.message 
+          : errorData.error || "Error al crear la ruta";
+        throw new Error(errorMessage);
       }
 
       notification.success({
@@ -64,11 +71,13 @@ export default function CrearRutaForm() {
         description: "La nueva ruta ha sido creada exitosamente.",
       });
       router.push("/routes");
-    } catch (err: any) {
-      notification.error({
-        message: "Error",
-        description: err.message,
-      });
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        notification.error({
+          message: "Error",
+          description: err.message,
+        });
+      }
     } finally {
       setSubmitting(false);
     }

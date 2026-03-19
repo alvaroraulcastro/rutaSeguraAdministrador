@@ -8,7 +8,6 @@ import {
   Space,
   Card,
   Typography,
-  Tag,
   Avatar,
   Input,
   Tooltip,
@@ -22,22 +21,27 @@ import {
   EditOutlined,
   DeleteOutlined,
   UserOutlined,
-  HomeOutlined,
-  AimOutlined,
-  PhoneOutlined,
-  TeamOutlined,
 } from "@ant-design/icons";
 
 const { Title, Text } = Typography;
 
 // TODO: Mover a un contexto de autenticación o variable de entorno
-const API_KEY = "tu_api_key_aqui"; // Reemplaza con una API Key válida
+const API_KEY = "tu_api_key_aqui"; // Reemplaza con una API Key válida obtenida del registro
+
+interface Pasajero {
+  id: string;
+  nombre: string;
+  telefono: string;
+  direccionDomicilio: string;
+  nombreDestino: string;
+  direccionDestino: string;
+  contactos: { id: string; nombre: string; telefono: string }[];
+}
 
 export default function PasajerosClient() {
-  const [pasajeros, setPasajeros] = useState([]);
+  const [pasajeros, setPasajeros] = useState<Pasajero[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [search, setSearch] = useState("");
 
   useEffect(() => {
     const fetchPasajeros = async () => {
@@ -49,8 +53,12 @@ export default function PasajerosClient() {
         if (!response.ok) throw new Error("Error al obtener los pasajeros");
         const data = await response.json();
         setPasajeros(data);
-      } catch (err: any) {
-        setError(err.message);
+      } catch (err: unknown) {
+        if (err instanceof Error) {
+          setError(err.message);
+        } else {
+          setError("Ocurrió un error desconocido");
+        }
       } finally {
         setLoading(false);
       }
@@ -72,10 +80,12 @@ export default function PasajerosClient() {
             headers: { "X-API-Key": API_KEY },
           });
           if (!response.ok) throw new Error("Error al eliminar el pasajero");
-          setPasajeros(pasajeros.filter((p: any) => p.id !== id));
+          setPasajeros((prev) => prev.filter((p) => p.id !== id));
           notification.success({ message: "Pasajero eliminado exitosamente" });
-        } catch (err: any) {
-          notification.error({ message: "Error", description: err.message });
+        } catch (err: unknown) {
+          if (err instanceof Error) {
+            notification.error({ message: "Error", description: err.message });
+          }
         }
       },
     });
@@ -86,7 +96,7 @@ export default function PasajerosClient() {
       title: "Pasajero",
       dataIndex: "nombre",
       key: "nombre",
-      render: (text: string, record: any) => (
+      render: (text: string, record: Pasajero) => (
         <Space>
           <Avatar icon={<UserOutlined />} />
           <Space direction="vertical" size={0}>
@@ -106,7 +116,7 @@ export default function PasajerosClient() {
       title: "Destino",
       dataIndex: "nombreDestino",
       key: "destino",
-      render: (text: string, record: any) => (
+      render: (text: string, record: Pasajero) => (
         <Space direction="vertical" size={0}>
           <Text>{text}</Text>
           <Text type="secondary">{record.direccionDestino}</Text>
@@ -117,9 +127,8 @@ export default function PasajerosClient() {
       title: "Contactos de Notificación",
       dataIndex: "contactos",
       key: "contactos",
-      render: (contactos: any[]) => (
+      render: (contactos: { id: string; nombre: string; telefono: string }[]) => (
         <Space>
-          <TeamOutlined />
           <Text>{contactos?.length || 0}</Text>
         </Space>
       ),
@@ -127,7 +136,7 @@ export default function PasajerosClient() {
     {
       title: "Acciones",
       key: "actions",
-      render: (_: any, record: any) => (
+      render: (_: unknown, record: Pasajero) => (
         <Space>
           <Tooltip title="Editar Pasajero">
             <Link href={`/passengers/${record.id}/edit`}>
@@ -157,8 +166,8 @@ export default function PasajerosClient() {
       <Space style={{ margin: "16px 0", width: "100%", justifyContent: "space-between" }}>
         <Input.Search
           placeholder="Buscar por nombre o dirección"
-          onChange={(e) => setSearch(e.target.value)}
           style={{ width: 300 }}
+          onSearch={(value) => console.log("Searching for:", value)}
         />
         <Link href="/passengers/new">
           <Button type="primary" icon={<PlusOutlined />}>

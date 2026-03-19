@@ -2,10 +2,10 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Form, Input, Button, Card, Typography, Space, Divider, notification, InputNumber, Row, Col } from "antd";
+import { Form, Input, Button, Card, Typography, Space, Divider, notification, Row, Col, InputNumber } from "antd";
 import { UserOutlined, PhoneOutlined, HomeOutlined, AimOutlined, PlusOutlined, DeleteOutlined, TeamOutlined } from "@ant-design/icons";
 
-const { Title, Text } = Typography;
+const { Title } = Typography;
 
 // TODO: Mover a un contexto de autenticación
 const API_KEY = "tu_api_key_aqui";
@@ -15,7 +15,7 @@ export default function CrearPasajeroForm() {
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
 
-  const onFinish = async (values: any) => {
+  const onFinish = async (values: unknown) => {
     setSubmitting(true);
     try {
       const response = await fetch("/api/v1/pasajeros", {
@@ -29,7 +29,10 @@ export default function CrearPasajeroForm() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error?.[0]?.message || "Error al crear el pasajero");
+        const errorMessage = Array.isArray(errorData.error) 
+          ? errorData.error[0]?.message 
+          : errorData.error || "Error al crear el pasajero";
+        throw new Error(errorMessage);
       }
 
       notification.success({
@@ -37,11 +40,13 @@ export default function CrearPasajeroForm() {
         description: "El pasajero ha sido registrado exitosamente.",
       });
       router.push("/passengers");
-    } catch (err: any) {
-      notification.error({
-        message: "Error",
-        description: err.message,
-      });
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        notification.error({
+          message: "Error",
+          description: err.message,
+        });
+      }
     } finally {
       setSubmitting(false);
     }
