@@ -1,0 +1,143 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Rol {
+  ADMIN
+  TRANSPORTISTA
+}
+
+enum TipoRuta {
+  IDA
+  VUELTA
+  IDA_Y_VUELTA
+}
+
+enum EstadoViaje {
+  PENDIENTE
+  EN_CURSO
+  COMPLETADO
+  CANCELADO
+}
+
+enum CanalNotificacion {
+  PUSH
+  SMS
+  WHATSAPP
+}
+
+model Usuario {
+  id        String   @id @default(cuid())
+  nombre    String
+  email     String   @unique
+  password  String   // Hash de la contraseña
+  rol       Rol      @default(TRANSPORTISTA)
+  telefono  String
+  foto      String?
+  
+  // Datos específicos de transportista (opcionales si el rol es ADMIN)
+  patente   String?
+  modelo    String?
+  capacidad Int?
+
+  rutas     Ruta[]
+  logs      LogPeticion[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model LogPeticion {
+  id         String   @id @default(cuid())
+  metodo     String   // GET, POST, PUT, DELETE
+  endpoint   String
+  ip         String?
+  userAgent  String?
+  payload    String?  @db.Text
+  usuarioId  String?
+  usuario    Usuario? @relation(fields: [usuarioId], references: [id])
+  fecha      DateTime @default(now())
+}
+
+model Pasajero {
+  id                     String                 @id @default(cuid())
+  nombre                 String
+  telefono               String
+  foto                   String?
+  direccionDomicilio     String
+  numeroDepto            String?
+  latDomicilio           Float
+  lngDomicilio           Float
+  instruccionesDomicilio String?
+  nombreDestino          String
+  direccionDestino       String
+  latDestino             Float
+  lngDestino             Float
+  contactos              ContactoNotificacion[]
+  paradas                Parada[]
+  notificaciones         NotificacionLog[]
+  createdAt              DateTime               @default(now())
+  updatedAt              DateTime               @updatedAt
+}
+
+model ContactoNotificacion {
+  id         String            @id @default(cuid())
+  nombre     String
+  telefono   String
+  email      String?
+  canal      CanalNotificacion @default(PUSH)
+  pasajeroId String
+  pasajero   Pasajero          @relation(fields: [pasajeroId], references: [id], onDelete: Cascade)
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+}
+
+model Ruta {
+  id              String   @id @default(cuid())
+  nombre          String
+  tipo            TipoRuta @default(IDA)
+  transportistaId String
+  transportista   Usuario  @relation(fields: [transportistaId], references: [id])
+  paradas         Parada[]
+  viajes          Viaje[]
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Parada {
+  id         String   @id @default(cuid())
+  orden      Int
+  rutaId     String
+  ruta       Ruta     @relation(fields: [rutaId], references: [id], onDelete: Cascade)
+  pasajeroId String
+  pasajero   Pasajero @relation(fields: [pasajeroId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([rutaId, orden])
+}
+
+model Viaje {
+  id             String            @id @default(cuid())
+  rutaId         String
+  ruta           Ruta              @relation(fields: [rutaId], references: [id])
+  fecha          DateTime          @default(now())
+  estado         EstadoViaje       @default(PENDIENTE)
+  notificaciones NotificacionLog[]
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+}
+
+model NotificacionLog {
+  id         String            @id @default(cuid())
+  mensaje    String
+  canal      CanalNotificacion
+  viajeId    String
+  viaje      Viaje             @relation(fields: [viajeId], references: [id])
+  pasajeroId String
+  pasajero   Pasajero          @relation(fields: [pasajeroId], references: [id])
+  enviadoEn  DateTime          @default(now())
+}

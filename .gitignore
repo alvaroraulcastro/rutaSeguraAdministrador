@@ -71,3 +71,5 @@ Thumbs.db
 
 # Turborepo (if used)
 .turbo
+
+/src/generated/prisma
