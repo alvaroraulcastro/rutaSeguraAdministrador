@@ -8,7 +8,6 @@ import {
   EnvironmentOutlined,
   BellOutlined,
   ArrowUpOutlined,
-  ArrowDownOutlined,
 } from "@ant-design/icons";
 const { Title } = Typography;
 

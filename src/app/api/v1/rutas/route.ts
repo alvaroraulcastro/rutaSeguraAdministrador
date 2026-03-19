@@ -25,6 +25,7 @@ export async function GET(request: Request) {
     });
     return NextResponse.json(rutas);
   } catch (error) {
+    console.error('Error fetching routes:', error);
     return NextResponse.json({ error: 'Error al obtener las rutas' }, { status: 500 });
   }
 }
@@ -51,6 +52,7 @@ export async function POST(request: Request) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: error.issues }, { status: 400 });
     }
+    console.error('Error creating route:', error);
     return NextResponse.json({ error: 'Error al crear la ruta' }, { status: 500 });
   }
 }

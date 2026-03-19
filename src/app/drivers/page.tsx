@@ -179,7 +179,7 @@ export default function DriversPage() {
   const disponibles = MOCK_DRIVERS.filter((d) => d.status === "Disponible").length;
 
   return (
-    <MainLayout>
+    <>
       <div style={{ marginBottom: 24, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 16 }}>
         <Title level={2} style={{ margin: 0 }}>
           Transportistas
@@ -244,6 +244,6 @@ export default function DriversPage() {
           pagination={{ pageSize: 10, showSizeChanger: true, showTotal: (t) => `Total: ${t}` }}
         />
       </Card>
-    </MainLayout>
+    </>
   );
 }

@@ -47,8 +47,12 @@ export default function EditarRutaForm({ rutaId }: EditarRutaFormProps) {
           transportistaId: rutaData.transportistaId,
         });
         setTransportistas(transportistasData);
-      } catch (err: any) {
-        setError(err.message);
+      } catch (err: unknown) {
+        if (err instanceof Error) {
+          setError(err.message);
+        } else {
+          setError("Ocurrió un error desconocido");
+        }
       } finally {
         setLoading(false);
       }
@@ -56,7 +60,7 @@ export default function EditarRutaForm({ rutaId }: EditarRutaFormProps) {
     fetchData();
   }, [rutaId, form]);
 
-  const onFinish = async (values: any) => {
+  const onFinish = async (values: { nombre: string; transportistaId: string }) => {
     setSubmitting(true);
     try {
       const response = await fetch(`/api/v1/rutas/${rutaId}`, {
@@ -70,7 +74,10 @@ export default function EditarRutaForm({ rutaId }: EditarRutaFormProps) {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error?.[0]?.message || "Error al actualizar la ruta");
+        const errorMessage = Array.isArray(errorData.error) 
+          ? errorData.error[0]?.message 
+          : errorData.error || "Error al actualizar la ruta";
+        throw new Error(errorMessage);
       }
 
       notification.success({
@@ -78,11 +85,13 @@ export default function EditarRutaForm({ rutaId }: EditarRutaFormProps) {
         description: "La ruta ha sido actualizada exitosamente.",
       });
       router.push("/routes");
-    } catch (err: any) {
-      notification.error({
-        message: "Error",
-        description: err.message,
-      });
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        notification.error({
+          message: "Error",
+          description: err.message,
+        });
+      }
     } finally {
       setSubmitting(false);
     }

@@ -2,20 +2,33 @@
 
 import React, { useState, useEffect } from "react";
 import { Table, Button, Space, Card, Typography, Select, notification, Spin, Modal } from "antd";
-import { PlusOutlined, DeleteOutlined, ArrowUpOutlined, ArrowDownOutlined, TeamOutlined } from "@ant-design/icons";
+import { PlusOutlined, DeleteOutlined, ArrowUpOutlined, ArrowDownOutlined } from "@ant-design/icons";
 
-const { Title, Text } = Typography;
+const { Title } = Typography;
 const { Option } = Select;
 
 const API_KEY = "tu_api_key_aqui";
+
+interface Pasajero {
+  id: string;
+  nombre: string;
+  direccionDomicilio: string;
+}
+
+interface Parada {
+  id: string;
+  orden: number;
+  pasajeroId: string;
+  pasajero: Pasajero;
+}
 
 interface GestionarParadasProps {
   rutaId: string;
 }
 
 export default function GestionarParadas({ rutaId }: GestionarParadasProps) {
-  const [paradas, setParadas] = useState<any[]>([]);
-  const [pasajeros, setPasajeros] = useState<any[]>([]);
+  const [paradas, setParadas] = useState<Parada[]>([]);
+  const [pasajeros, setPasajeros] = useState<Pasajero[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedPasajero, setSelectedPasajero] = useState<string | null>(null);
 
@@ -34,8 +47,10 @@ export default function GestionarParadas({ rutaId }: GestionarParadasProps) {
 
       setParadas(paradasData);
       setPasajeros(pasajerosData);
-    } catch (err: any) {
-      notification.error({ message: "Error", description: err.message });
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        notification.error({ message: "Error", description: err.message });
+      }
     } finally {
       setLoading(false);
     }
@@ -43,6 +58,7 @@ export default function GestionarParadas({ rutaId }: GestionarParadasProps) {
 
   useEffect(() => {
     fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rutaId]);
 
   const handleAddParada = async () => {
@@ -59,8 +75,10 @@ export default function GestionarParadas({ rutaId }: GestionarParadasProps) {
       setSelectedPasajero(null);
       fetchData();
       notification.success({ message: "Parada añadida" });
-    } catch (err: any) {
-      notification.error({ message: "Error", description: err.message });
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        notification.error({ message: "Error", description: err.message });
+      }
     }
   };
 
@@ -76,8 +94,10 @@ export default function GestionarParadas({ rutaId }: GestionarParadasProps) {
           if (!response.ok) throw new Error("Error al eliminar");
           fetchData();
           notification.success({ message: "Parada eliminada" });
-        } catch (err: any) {
-          notification.error({ message: "Error", description: err.message });
+        } catch (err: unknown) {
+          if (err instanceof Error) {
+            notification.error({ message: "Error", description: err.message });
+          }
         }
       },
     });
@@ -102,19 +122,21 @@ export default function GestionarParadas({ rutaId }: GestionarParadasProps) {
       });
       if (!response.ok) throw new Error("Error al reordenar");
       setParadas(newParadas);
-    } catch (err: any) {
-      notification.error({ message: "Error", description: err.message });
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        notification.error({ message: "Error", description: err.message });
+      }
     }
   };
 
   const columns = [
     { title: "Orden", dataIndex: "orden", key: "orden", width: 80 },
-    { title: "Pasajero", key: "pasajero", render: (record: any) => record.pasajero.nombre },
-    { title: "Dirección", key: "direccion", render: (record: any) => record.pasajero.direccionDomicilio },
+    { title: "Pasajero", key: "pasajero", render: (record: Parada) => record.pasajero.nombre },
+    { title: "Dirección", key: "direccion", render: (record: Parada) => record.pasajero.direccionDomicilio },
     {
       title: "Acciones",
       key: "actions",
-      render: (record: any) => (
+      render: (record: Parada) => (
         <Space>
           <Button icon={<ArrowUpOutlined />} onClick={() => handleReorder(record.id, 'up')} disabled={record.orden === 1} />
           <Button icon={<ArrowDownOutlined />} onClick={() => handleReorder(record.id, 'down')} disabled={record.orden === paradas.length} />

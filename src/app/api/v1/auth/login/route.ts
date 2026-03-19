@@ -26,7 +26,8 @@ export async function POST(request: Request) {
     // Este endpoint puede servir para validar credenciales y quizás devolver
     // información del usuario, pero no una nueva API Key en cada login.
 
-    const { password, apiKey, ...userWithoutSensitiveData } = user;
+    const { password: _password, apiKey: _apiKey, ...userWithoutSensitiveData } = user;
+    console.log('User sensitive data removed:', { _password: !!_password, _apiKey: !!_apiKey });
 
     return NextResponse.json({ user: userWithoutSensitiveData });
 
@@ -34,6 +35,7 @@ export async function POST(request: Request) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: error.issues }, { status: 400 });
     }
+    console.error('Login error:', error);
     return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 });
   }
 }

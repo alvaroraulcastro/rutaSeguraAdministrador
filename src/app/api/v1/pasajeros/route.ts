@@ -20,6 +20,7 @@ export async function GET(request: Request) {
     });
     return NextResponse.json(pasajeros);
   } catch (error) {
+    console.error('Error fetching passengers:', error);
     return NextResponse.json({ error: 'Error al obtener los pasajeros' }, { status: 500 });
   }
 }

@@ -29,6 +29,7 @@ export async function GET(request: Request) {
     });
     return NextResponse.json(viajes);
   } catch (error) {
+    console.error('Error fetching trips:', error);
     return NextResponse.json({ error: 'Error al obtener los viajes' }, { status: 500 });
   }
 }
@@ -59,6 +60,7 @@ export async function POST(request: Request) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: error.issues }, { status: 400 });
     }
+    console.error('Error creating trip:', error);
     return NextResponse.json({ error: 'Error al crear el viaje' }, { status: 500 });
   }
 }

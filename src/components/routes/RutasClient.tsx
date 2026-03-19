@@ -11,11 +11,6 @@ import {
   Tag,
   Tooltip,
   Input,
-  Row,
-  Col,
-  Statistic,
-  Select,
-  Progress,
   Spin,
   Alert,
   Modal,
@@ -37,13 +32,18 @@ const { Title, Text } = Typography;
 // TODO: Mover a un contexto de autenticación o variable de entorno
 const API_KEY = "tu_api_key_aqui"; // Reemplaza con una API Key válida obtenida del registro
 
+interface Ruta {
+  id: string;
+  nombre: string;
+  tipo: string;
+  transportista: { nombre: string } | null;
+  paradas: { id: string }[] | null;
+}
+
 export default function RutasClient() {
-  const [rutas, setRutas] = useState([]);
+  const [rutas, setRutas] = useState<Ruta[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [search, setSearch] = useState("");
-  const [typeFilter, setTypeFilter] = useState<string | null>(null);
-  const [statusFilter, setStatusFilter] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchRutas = async () => {
@@ -62,8 +62,12 @@ export default function RutasClient() {
 
         const data = await response.json();
         setRutas(data);
-      } catch (err: any) {
-        setError(err.message);
+      } catch (err: unknown) {
+        if (err instanceof Error) {
+          setError(err.message);
+        } else {
+          setError("Ocurrió un error desconocido");
+        }
       } finally {
         setLoading(false);
       }
@@ -90,16 +94,18 @@ export default function RutasClient() {
             throw new Error("Error al eliminar la ruta");
           }
 
-          setRutas(rutas.filter((ruta: any) => ruta.id !== id));
+          setRutas((prev) => prev.filter((ruta) => ruta.id !== id));
           notification.success({
             message: "Ruta Eliminada",
             description: "La ruta ha sido eliminada exitosamente.",
           });
-        } catch (err: any) {
-          notification.error({
-            message: "Error",
-            description: err.message,
-          });
+        } catch (err: unknown) {
+          if (err instanceof Error) {
+            notification.error({
+              message: "Error",
+              description: err.message,
+            });
+          }
         }
       },
     });
@@ -110,7 +116,7 @@ export default function RutasClient() {
       title: "Nombre Ruta",
       dataIndex: "nombre",
       key: "nombre",
-      render: (text: string, record: any) => (
+      render: (text: string, record: Ruta) => (
         <Space orientation="vertical" size={0}>
           <Space>
             <EnvironmentOutlined style={{ color: "#1677ff" }} />
@@ -126,7 +132,7 @@ export default function RutasClient() {
       title: "Transportista",
       dataIndex: "transportista",
       key: "transportista",
-      render: (transportista: any) => (
+      render: (transportista: { nombre: string } | null) => (
         <Space>
           <CarOutlined />
           <Text>{transportista?.nombre || "No asignado"}</Text>
@@ -137,7 +143,7 @@ export default function RutasClient() {
       title: "Pasajeros",
       dataIndex: "paradas",
       key: "pasajeros",
-      render: (paradas: any[]) => (
+      render: (paradas: { id: string }[] | null) => (
         <Space>
           <TeamOutlined />
           <Text>{paradas?.length || 0}</Text>
@@ -153,7 +159,7 @@ export default function RutasClient() {
     {
       title: "Acciones",
       key: "actions",
-      render: (_: any, record: any) => (
+      render: (_: unknown, record: Ruta) => (
         <Space>
           <Tooltip title="Ver Detalles / Gestionar Paradas">
             <Link href={`/routes/${record.id}/stops`}>
@@ -188,15 +194,10 @@ export default function RutasClient() {
       <Space style={{ margin: "16px 0", width: "100%", justifyContent: "space-between" }}>
         <Input.Search
           placeholder="Buscar por nombre o transportista"
-          onChange={(e) => setSearch(e.target.value)}
           style={{ width: 300 }}
+          onSearch={(value) => console.log("Searching for:", value)}
         />
         <Space>
-          <Select placeholder="Filtrar por tipo" style={{ width: 150 }} onChange={setTypeFilter} allowClear>
-            <Select.Option value="IDA">IDA</Select.Option>
-            <Select.Option value="VUELTA">VUELTA</Select.Option>
-            <Select.Option value="IDA_Y_VUELTA">IDA Y VUELTA</Select.Option>
-          </Select>
           <Link href="/routes/new">
             <Button type="primary" icon={<PlusOutlined />}>
               Crear Ruta

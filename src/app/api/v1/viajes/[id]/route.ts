@@ -32,6 +32,7 @@ export async function GET(request: Request, { params }: { params: Params }) {
     return NextResponse.json(viaje);
 
   } catch (error) {
+    console.error('Error fetching trip:', error);
     return NextResponse.json({ error: 'Error al obtener the viaje' }, { status: 500 });
   }
 }
@@ -62,6 +63,7 @@ export async function PUT(request: Request, { params }: { params: Params }) {
     if (error.code === 'P2025') {
       return NextResponse.json({ error: 'Viaje no encontrado' }, { status: 404 });
     }
+    console.error('Error updating trip:', error);
     return NextResponse.json({ error: 'Error al actualizar el viaje' }, { status: 500 });
   }
 }
@@ -85,6 +87,7 @@ export async function DELETE(request: Request, { params }: { params: Params }) {
     if (error.code === 'P2025') {
       return NextResponse.json({ error: 'Viaje no encontrado' }, { status: 404 });
     }
+    console.error('Error deleting trip:', error);
     return NextResponse.json({ error: 'Error al eliminar el viaje' }, { status: 500 });
   }
 }

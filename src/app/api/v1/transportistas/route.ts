@@ -18,6 +18,7 @@ export async function GET(request: Request) {
     });
     return NextResponse.json(transportistas);
   } catch (error) {
+    console.error('Error fetching drivers:', error);
     return NextResponse.json({ error: 'Error al obtener los transportistas' }, { status: 500 });
   }
 }
