@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 import { locationSchema } from '@/lib/schemas/location';
+import { validarApiKey } from '@/lib/auth';
 
 interface Params {
   viajeId: string;
@@ -9,6 +10,13 @@ interface Params {
 
 export async function POST(request: Request, { params }: { params: Params }) {
   try {
+    const apiKey = request.headers.get('X-API-Key');
+    const usuario = await validarApiKey(apiKey);
+
+    if (!usuario) {
+      return NextResponse.json({ error: 'API Key inválida' }, { status: 401 });
+    }
+
     const data = await request.json();
     const validatedData = locationSchema.parse(data);
 

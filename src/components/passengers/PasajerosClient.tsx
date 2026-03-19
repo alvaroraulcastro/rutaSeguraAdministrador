@@ -130,7 +130,9 @@ export default function PasajerosClient() {
       render: (_: any, record: any) => (
         <Space>
           <Tooltip title="Editar Pasajero">
-            <Button icon={<EditOutlined />} />
+            <Link href={`/passengers/${record.id}/edit`}>
+              <Button icon={<EditOutlined />} />
+            </Link>
           </Tooltip>
           <Tooltip title="Eliminar Pasajero">
             <Button icon={<DeleteOutlined />} danger onClick={() => handleDelete(record.id)} />
@@ -158,9 +160,11 @@ export default function PasajerosClient() {
           onChange={(e) => setSearch(e.target.value)}
           style={{ width: 300 }}
         />
-        <Button type="primary" icon={<PlusOutlined />}>
-          Añadir Pasajero
-        </Button>
+        <Link href="/passengers/new">
+          <Button type="primary" icon={<PlusOutlined />}>
+            Añadir Pasajero
+          </Button>
+        </Link>
       </Space>
       <Table columns={columns} dataSource={pasajeros} rowKey="id" />
     </Card>

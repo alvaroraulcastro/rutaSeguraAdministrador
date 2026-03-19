@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 import { crearParadaSchema, reordenarParadasSchema } from '@/lib/schemas/parada';
+import { validarApiKey } from '@/lib/auth';
 
 interface Params {
   rutaId: string;
@@ -9,6 +10,13 @@ interface Params {
 
 export async function GET(request: Request, { params }: { params: Params }) {
   try {
+    const apiKey = request.headers.get('X-API-Key');
+    const usuario = await validarApiKey(apiKey);
+
+    if (!usuario) {
+      return NextResponse.json({ error: 'API Key inválida' }, { status: 401 });
+    }
+
     const paradas = await prisma.parada.findMany({
       where: { rutaId: params.rutaId },
       orderBy: { orden: 'asc' },
@@ -22,6 +30,13 @@ export async function GET(request: Request, { params }: { params: Params }) {
 
 export async function POST(request: Request, { params }: { params: Params }) {
   try {
+    const apiKey = request.headers.get('X-API-Key');
+    const usuario = await validarApiKey(apiKey);
+
+    if (!usuario) {
+      return NextResponse.json({ error: 'API Key inválida' }, { status: 401 });
+    }
+
     const data = await request.json();
     const validatedData = crearParadaSchema.parse(data);
 
@@ -44,6 +59,13 @@ export async function POST(request: Request, { params }: { params: Params }) {
 
 export async function PUT(request: Request, { params }: { params: Params }) {
   try {
+    const apiKey = request.headers.get('X-API-Key');
+    const usuario = await validarApiKey(apiKey);
+
+    if (!usuario) {
+      return NextResponse.json({ error: 'API Key inválida' }, { status: 401 });
+    }
+
     const data = await request.json();
     const validatedData = reordenarParadasSchema.parse(data);
 

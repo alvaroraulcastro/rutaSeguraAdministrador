@@ -244,6 +244,6 @@ export default function DriversPage() {
           pagination={{ pageSize: 10, showSizeChanger: true, showTotal: (t) => `Total: ${t}` }}
         />
       </Card>
-    </>
+    </MainLayout>
   );
 }
