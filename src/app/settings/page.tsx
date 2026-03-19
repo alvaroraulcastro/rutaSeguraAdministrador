@@ -214,6 +214,6 @@ export default function SettingsPage() {
       <Card>
         <Tabs items={tabItems} />
       </Card>
-    </>
+    </MainLayout>
   );
 }

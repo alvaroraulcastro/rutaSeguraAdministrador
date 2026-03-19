@@ -155,8 +155,10 @@ export default function RutasClient() {
       key: "actions",
       render: (_: any, record: any) => (
         <Space>
-          <Tooltip title="Ver Detalles">
-            <Button icon={<EyeOutlined />} />
+          <Tooltip title="Ver Detalles / Gestionar Paradas">
+            <Link href={`/routes/${record.id}/stops`}>
+              <Button icon={<EyeOutlined />} />
+            </Link>
           </Tooltip>
           <Tooltip title="Editar">
             <Link href={`/routes/${record.id}/edit`}>

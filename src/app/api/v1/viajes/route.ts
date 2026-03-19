@@ -2,9 +2,17 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 import { crearViajeSchema } from '@/lib/schemas/viaje';
+import { validarApiKey } from '@/lib/auth';
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const apiKey = request.headers.get('X-API-Key');
+    const usuario = await validarApiKey(apiKey);
+
+    if (!usuario) {
+      return NextResponse.json({ error: 'API Key inválida' }, { status: 401 });
+    }
+
     const viajes = await prisma.viaje.findMany({
       include: {
         ruta: {
@@ -27,6 +35,13 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
+    const apiKey = request.headers.get('X-API-Key');
+    const usuario = await validarApiKey(apiKey);
+
+    if (!usuario) {
+      return NextResponse.json({ error: 'API Key inválida' }, { status: 401 });
+    }
+
     const data = await request.json();
     const validatedData = crearViajeSchema.parse(data);
 

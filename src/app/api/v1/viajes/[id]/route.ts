@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 import { actualizarViajeSchema } from '@/lib/schemas/viaje';
+import { validarApiKey } from '@/lib/auth';
 
 interface Params {
   id: string;
@@ -9,6 +10,13 @@ interface Params {
 
 export async function GET(request: Request, { params }: { params: Params }) {
   try {
+    const apiKey = request.headers.get('X-API-Key');
+    const usuario = await validarApiKey(apiKey);
+
+    if (!usuario) {
+      return NextResponse.json({ error: 'API Key inválida' }, { status: 401 });
+    }
+
     const viaje = await prisma.viaje.findUnique({
       where: { id: params.id },
       include: {
@@ -24,12 +32,19 @@ export async function GET(request: Request, { params }: { params: Params }) {
     return NextResponse.json(viaje);
 
   } catch (error) {
-    return NextResponse.json({ error: 'Error al obtener el viaje' }, { status: 500 });
+    return NextResponse.json({ error: 'Error al obtener the viaje' }, { status: 500 });
   }
 }
 
 export async function PUT(request: Request, { params }: { params: Params }) {
   try {
+    const apiKey = request.headers.get('X-API-Key');
+    const usuario = await validarApiKey(apiKey);
+
+    if (!usuario) {
+      return NextResponse.json({ error: 'API Key inválida' }, { status: 401 });
+    }
+
     const data = await request.json();
     const validatedData = actualizarViajeSchema.parse(data);
 
@@ -53,6 +68,13 @@ export async function PUT(request: Request, { params }: { params: Params }) {
 
 export async function DELETE(request: Request, { params }: { params: Params }) {
   try {
+    const apiKey = request.headers.get('X-API-Key');
+    const usuario = await validarApiKey(apiKey);
+
+    if (!usuario) {
+      return NextResponse.json({ error: 'API Key inválida' }, { status: 401 });
+    }
+
     await prisma.viaje.delete({
       where: { id: params.id },
     });

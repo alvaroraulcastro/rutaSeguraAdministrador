@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { validarApiKey } from '@/lib/auth';
 
 interface Params {
   rutaId: string;
@@ -8,6 +9,13 @@ interface Params {
 
 export async function DELETE(request: Request, { params }: { params: Params }) {
   try {
+    const apiKey = request.headers.get('X-API-Key');
+    const usuario = await validarApiKey(apiKey);
+
+    if (!usuario) {
+      return NextResponse.json({ error: 'API Key inválida' }, { status: 401 });
+    }
+
     await prisma.parada.delete({
       where: {
         id: params.paradaId,
