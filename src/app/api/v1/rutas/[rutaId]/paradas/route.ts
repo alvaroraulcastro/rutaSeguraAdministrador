@@ -1,0 +1,68 @@
+import { NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+import { z } from 'zod';
+import { crearParadaSchema, reordenarParadasSchema } from '@/lib/schemas/parada';
+
+interface Params {
+  rutaId: string;
+}
+
+export async function GET(request: Request, { params }: { params: Params }) {
+  try {
+    const paradas = await prisma.parada.findMany({
+      where: { rutaId: params.rutaId },
+      orderBy: { orden: 'asc' },
+      include: { pasajero: true },
+    });
+    return NextResponse.json(paradas);
+  } catch (error) {
+    return NextResponse.json({ error: 'Error al obtener las paradas' }, { status: 500 });
+  }
+}
+
+export async function POST(request: Request, { params }: { params: Params }) {
+  try {
+    const data = await request.json();
+    const validatedData = crearParadaSchema.parse(data);
+
+    const nuevaParada = await prisma.parada.create({
+      data: {
+        rutaId: params.rutaId,
+        ...validatedData,
+      },
+    });
+
+    return NextResponse.json(nuevaParada, { status: 201 });
+
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ error: error.issues }, { status: 400 });
+    }
+    return NextResponse.json({ error: 'Error al crear la parada' }, { status: 500 });
+  }
+}
+
+export async function PUT(request: Request, { params }: { params: Params }) {
+  try {
+    const data = await request.json();
+    const validatedData = reordenarParadasSchema.parse(data);
+
+    // Para reordenar, ejecutamos múltiples actualizaciones en una transacción
+    const transaccion = validatedData.map(parada => 
+      prisma.parada.update({
+        where: { id: parada.id, rutaId: params.rutaId },
+        data: { orden: parada.orden },
+      })
+    );
+
+    await prisma.$transaction(transaccion);
+
+    return NextResponse.json({ message: 'Paradas reordenadas con éxito' });
+
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ error: error.issues }, { status: 400 });
+    }
+    return NextResponse.json({ error: 'Error al reordenar las paradas' }, { status: 500 });
+  }
+}
