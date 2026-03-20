@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useCallback } from "react";
 
 const AUTH_STORAGE_KEY = "rutasegura_admin_user";
+const AUTH_DEBUG_STORAGE_KEY = "rutasegura_debug_auth";
 
 export type User = {
   id: string;
@@ -29,6 +30,22 @@ function saveUser(user: User | null) {
   else localStorage.removeItem(AUTH_STORAGE_KEY);
 }
 
+function shouldLogAuth() {
+  if (typeof window === "undefined") return false;
+  const localFlag = localStorage.getItem(AUTH_DEBUG_STORAGE_KEY) === "1";
+  const urlFlag = new URLSearchParams(window.location.search).get("debugAuth") === "1";
+  return localFlag || urlFlag;
+}
+
+function maskEmail(email: string) {
+  const at = email.indexOf("@");
+  if (at <= 0) return "***";
+  const userPart = email.slice(0, at);
+  const domainPart = email.slice(at + 1);
+  const maskedUser = `${userPart[0]}***`;
+  return `${maskedUser}@${domainPart}`;
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(() => {
     if (typeof window !== "undefined") {
@@ -47,18 +64,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const isProd = process.env.NODE_ENV === "production";
 
   const login = useCallback(async (email: string, password: string) => {
+    const requestId =
+      typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now()}`;
     try {
-      if (!isProd) console.debug("[auth.login.client.start]", { email });
+      const shouldLog = !isProd || shouldLogAuth();
+      if (shouldLog) {
+        console.log("[auth.login.client.before_request]", {
+          requestId,
+          url: "/api/v1/auth/login",
+          method: "POST",
+          email: maskEmail(email),
+        });
+      }
       const response = await fetch("/api/v1/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
 
+      if (!isProd || shouldLogAuth()) {
+        console.log("[auth.login.client.after_response]", {
+          requestId,
+          status: response.status,
+          ok: response.ok,
+        });
+      }
+
       const data = await response.json();
 
       if (!response.ok) {
-        if (!isProd) console.debug("[auth.login.client.fail]", { status: response.status, error: data?.error });
+        if (!isProd || shouldLogAuth()) {
+          console.log("[auth.login.client.error_payload]", {
+            requestId,
+            error: data?.error ?? null,
+          });
+        }
         return { ok: false, message: data.error || "Error al iniciar sesión" };
       }
 
@@ -69,9 +109,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       setUser(u);
       saveUser(u);
-      if (!isProd) console.debug("[auth.login.client.success]", { userId: u.id });
+      if (!isProd || shouldLogAuth()) {
+        console.log("[auth.login.client.success]", { requestId, userId: u.id });
+      }
       return { ok: true };
     } catch (error) {
+      if (!isProd || shouldLogAuth()) {
+        console.log("[auth.login.client.exception]", { requestId, error });
+      }
       console.error("Login context error:", error);
       return { ok: false, message: "Error de conexión con el servidor" };
     }

@@ -15,10 +15,23 @@ export default function LoginPage() {
   const { login } = useAuth();
   const [loading, setLoading] = useState(false);
 
+  const shouldLog = () => {
+    if (typeof window === "undefined") return false;
+    const localFlag = localStorage.getItem("rutasegura_debug_auth") === "1";
+    const urlFlag = new URLSearchParams(window.location.search).get("debugAuth") === "1";
+    return localFlag || urlFlag;
+  };
+
   const onFinish = async (values: { email: string; password: string }) => {
     setLoading(true);
     try {
+      if (shouldLog()) {
+        console.log("[login.page.before_submit]", { email: values.email });
+      }
       const result = await login(values.email, values.password);
+      if (shouldLog()) {
+        console.log("[login.page.after_submit]", { ok: result.ok, message: result.message ?? null });
+      }
       if (result.ok) {
         message.success("Sesión iniciada correctamente");
         router.replace("/");
