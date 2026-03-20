@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
 import { validarApiKey } from '@/lib/auth';
 
 export async function DELETE(request: NextRequest, context: { params: Promise<{ rutaId: string; paradaId: string }> }) {
@@ -23,8 +24,10 @@ export async function DELETE(request: NextRequest, context: { params: Promise<{ 
     return new NextResponse(null, { status: 204 });
 
   } catch (error) {
-    if (error.code === 'P2025') {
-      return NextResponse.json({ error: 'Parada no encontrada en esta ruta' }, { status: 404 });
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      if (error.code === 'P2025') {
+        return NextResponse.json({ error: 'Parada no encontrada en esta ruta' }, { status: 404 });
+      }
     }
     console.error('Error deleting stop:', error);
     return NextResponse.json({ error: 'Error al eliminar la parada' }, { status: 500 });
