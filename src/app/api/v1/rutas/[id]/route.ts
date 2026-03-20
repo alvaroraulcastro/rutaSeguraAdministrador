@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
 import { z } from 'zod';
 import { actualizarRutaSchema } from '@/lib/schemas/ruta';
 import { validarApiKey } from '@/lib/auth';
@@ -59,8 +60,10 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ id:
       return NextResponse.json({ error: error.issues }, { status: 400 });
     }
     // Manejar error si la ruta no existe
-    if (error.code === 'P2025') {
-      return NextResponse.json({ error: 'Ruta no encontrada' }, { status: 404 });
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      if (error.code === 'P2025') {
+        return NextResponse.json({ error: 'Ruta no encontrada' }, { status: 404 });
+      }
     }
     console.error('Error updating route:', error);
     return NextResponse.json({ error: 'Error al actualizar la ruta' }, { status: 500 });
@@ -85,8 +88,10 @@ export async function DELETE(request: NextRequest, context: { params: Promise<{ 
 
   } catch (error) {
     // Manejar error si la ruta no existe
-    if (error.code === 'P2025') {
-      return NextResponse.json({ error: 'Ruta no encontrada' }, { status: 404 });
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      if (error.code === 'P2025') {
+        return NextResponse.json({ error: 'Ruta no encontrada' }, { status: 404 });
+      }
     }
     console.error('Error deleting route:', error);
     return NextResponse.json({ error: 'Error al eliminar la ruta' }, { status: 500 });

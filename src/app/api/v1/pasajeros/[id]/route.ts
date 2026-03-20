@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
 import { z } from 'zod';
 import { actualizarPasajeroSchema } from '@/lib/schemas/pasajero';
 import { validarApiKey } from '@/lib/auth';
@@ -59,8 +60,10 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ id:
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: error.issues }, { status: 400 });
     }
-    if (error.code === 'P2025') {
-      return NextResponse.json({ error: 'Pasajero no encontrado' }, { status: 404 });
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      if (error.code === 'P2025') {
+        return NextResponse.json({ error: 'Pasajero no encontrado' }, { status: 404 });
+      }
     }
     console.error('Error updating passenger:', error);
     return NextResponse.json({ error: 'Error al actualizar el pasajero' }, { status: 500 });
@@ -84,8 +87,10 @@ export async function DELETE(request: NextRequest, context: { params: Promise<{ 
     return new NextResponse(null, { status: 204 });
 
   } catch (error) {
-    if (error.code === 'P2025') {
-      return NextResponse.json({ error: 'Pasajero no encontrado' }, { status: 404 });
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      if (error.code === 'P2025') {
+        return NextResponse.json({ error: 'Pasajero no encontrado' }, { status: 404 });
+      }
     }
     console.error('Error deleting passenger:', error);
     return NextResponse.json({ error: 'Error al eliminar el pasajero' }, { status: 500 });

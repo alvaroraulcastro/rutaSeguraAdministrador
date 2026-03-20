@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
 import { z } from 'zod';
 import { actualizarViajeSchema } from '@/lib/schemas/viaje';
 import { validarApiKey } from '@/lib/auth';
@@ -58,8 +59,10 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ id:
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: error.issues }, { status: 400 });
     }
-    if (error.code === 'P2025') {
-      return NextResponse.json({ error: 'Viaje no encontrado' }, { status: 404 });
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      if (error.code === 'P2025') {
+        return NextResponse.json({ error: 'Viaje no encontrado' }, { status: 404 });
+      }
     }
     console.error('Error updating trip:', error);
     return NextResponse.json({ error: 'Error al actualizar el viaje' }, { status: 500 });
@@ -83,8 +86,10 @@ export async function DELETE(request: NextRequest, context: { params: Promise<{ 
     return new NextResponse(null, { status: 204 });
 
   } catch (error) {
-    if (error.code === 'P2025') {
-      return NextResponse.json({ error: 'Viaje no encontrado' }, { status: 404 });
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      if (error.code === 'P2025') {
+        return NextResponse.json({ error: 'Viaje no encontrado' }, { status: 404 });
+      }
     }
     console.error('Error deleting trip:', error);
     return NextResponse.json({ error: 'Error al eliminar el viaje' }, { status: 500 });
