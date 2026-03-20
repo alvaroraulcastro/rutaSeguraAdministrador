@@ -1,15 +1,12 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 import { crearParadaSchema, reordenarParadasSchema } from '@/lib/schemas/parada';
 import { validarApiKey } from '@/lib/auth';
 
-interface Params {
-  rutaId: string;
-}
-
-export async function GET(request: Request, { params }: { params: Params }) {
+export async function GET(request: NextRequest, context: { params: Promise<{ rutaId: string }> }) {
   try {
+    const { rutaId } = await context.params;
     const apiKey = request.headers.get('X-API-Key');
     const usuario = await validarApiKey(apiKey);
 
@@ -18,7 +15,7 @@ export async function GET(request: Request, { params }: { params: Params }) {
     }
 
     const paradas = await prisma.parada.findMany({
-      where: { rutaId: params.rutaId },
+      where: { rutaId },
       orderBy: { orden: 'asc' },
       include: { pasajero: true },
     });
@@ -29,8 +26,9 @@ export async function GET(request: Request, { params }: { params: Params }) {
   }
 }
 
-export async function POST(request: Request, { params }: { params: Params }) {
+export async function POST(request: NextRequest, context: { params: Promise<{ rutaId: string }> }) {
   try {
+    const { rutaId } = await context.params;
     const apiKey = request.headers.get('X-API-Key');
     const usuario = await validarApiKey(apiKey);
 
@@ -43,7 +41,7 @@ export async function POST(request: Request, { params }: { params: Params }) {
 
     const nuevaParada = await prisma.parada.create({
       data: {
-        rutaId: params.rutaId,
+        rutaId,
         ...validatedData,
       },
     });
@@ -59,8 +57,9 @@ export async function POST(request: Request, { params }: { params: Params }) {
   }
 }
 
-export async function PUT(request: Request, { params }: { params: Params }) {
+export async function PUT(request: NextRequest, context: { params: Promise<{ rutaId: string }> }) {
   try {
+    const { rutaId } = await context.params;
     const apiKey = request.headers.get('X-API-Key');
     const usuario = await validarApiKey(apiKey);
 
@@ -74,7 +73,7 @@ export async function PUT(request: Request, { params }: { params: Params }) {
     // Para reordenar, ejecutamos múltiples actualizaciones en una transacción
     const transaccion = validatedData.map(parada => 
       prisma.parada.update({
-        where: { id: parada.id, rutaId: params.rutaId },
+        where: { id: parada.id, rutaId },
         data: { orden: parada.orden },
       })
     );
