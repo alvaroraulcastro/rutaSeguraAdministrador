@@ -4,6 +4,8 @@ import { z } from 'zod';
 import { crearRutaSchema } from '@/lib/schemas/ruta';
 import { validarApiKey } from '@/lib/auth';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: Request) {
   try {
     const apiKey = request.headers.get('X-API-Key');

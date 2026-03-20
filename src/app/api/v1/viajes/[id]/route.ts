@@ -5,6 +5,8 @@ import { z } from 'zod';
 import { actualizarViajeSchema } from '@/lib/schemas/viaje';
 import { validarApiKey } from '@/lib/auth';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await context.params;
