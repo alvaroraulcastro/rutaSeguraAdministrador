@@ -116,7 +116,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
             </Badge>
             <Space>
               <Avatar icon={<UserOutlined />} />
-              <span>{user?.name ?? "Administrador"}</span>
+              <span>{user?.nombre ?? "Administrador"}</span>
             </Space>
             <Button
               type="text"

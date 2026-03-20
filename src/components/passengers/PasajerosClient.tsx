@@ -27,6 +27,16 @@ import { useAuth } from "@/contexts/AuthContext";
 
 const { Title, Text } = Typography;
 
+interface Pasajero {
+  id: string;
+  nombre: string;
+  telefono: string;
+  direccionDomicilio: string;
+  nombreDestino: string;
+  direccionDestino: string;
+  contactos: { id: string; nombre: string; telefono: string }[];
+}
+
 export default function PasajerosClient() {
   const { user } = useAuth();
   const [pasajeros, setPasajeros] = useState<Pasajero[]>([]);

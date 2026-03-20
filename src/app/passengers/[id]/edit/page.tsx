@@ -11,5 +11,5 @@ export default function EditPassengerPage() {
     return <div>ID de pasajero no válido</div>;
   }
 
-  return <EditarPasajeroForm pasajeroId={id} />;
+  return <EditarPasajeroForm id={id} />;
 }
