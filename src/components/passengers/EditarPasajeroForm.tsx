@@ -4,17 +4,16 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Form, Input, Button, Card, Typography, Space, Divider, notification, InputNumber, Row, Col, Spin, Alert } from "antd";
 import { UserOutlined, PhoneOutlined, HomeOutlined, AimOutlined, PlusOutlined, DeleteOutlined, TeamOutlined } from "@ant-design/icons";
+import { useAuth } from "@/contexts/AuthContext";
 
 const { Title } = Typography;
 
-// TODO: Mover a un contexto de autenticación
-const API_KEY = "tu_api_key_aqui";
-
 interface EditarPasajeroFormProps {
-  pasajeroId: string;
+  id: string;
 }
 
-export default function EditarPasajeroForm({ pasajeroId }: EditarPasajeroFormProps) {
+export default function EditarPasajeroForm({ id }: EditarPasajeroFormProps) {
+  const { user } = useAuth();
   const [form] = Form.useForm();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
@@ -23,9 +22,10 @@ export default function EditarPasajeroForm({ pasajeroId }: EditarPasajeroFormPro
 
   useEffect(() => {
     const fetchPasajero = async () => {
+      if (!user?.apiKey) return;
       try {
-        const response = await fetch(`/api/v1/pasajeros/${pasajeroId}`, {
-          headers: { "X-API-Key": API_KEY },
+        const response = await fetch(`/api/v1/pasajeros/${id}`, {
+          headers: { "X-API-Key": user.apiKey },
         });
 
         if (!response.ok) throw new Error("No se pudo cargar la información del pasajero");
@@ -52,16 +52,17 @@ export default function EditarPasajeroForm({ pasajeroId }: EditarPasajeroFormPro
       }
     };
     fetchPasajero();
-  }, [pasajeroId, form]);
+  }, [id, form, user?.apiKey]);
 
   const onFinish = async (values: unknown) => {
+    if (!user?.apiKey) return;
     setSubmitting(true);
     try {
-      const response = await fetch(`/api/v1/pasajeros/${pasajeroId}`, {
+      const response = await fetch(`/api/v1/pasajeros/${id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
-          "X-API-Key": API_KEY,
+          "X-API-Key": user.apiKey,
         },
         body: JSON.stringify(values),
       });

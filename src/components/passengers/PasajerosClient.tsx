@@ -23,32 +23,23 @@ import {
   UserOutlined,
 } from "@ant-design/icons";
 
+import { useAuth } from "@/contexts/AuthContext";
+
 const { Title, Text } = Typography;
 
-// TODO: Mover a un contexto de autenticación o variable de entorno
-const API_KEY = "tu_api_key_aqui"; // Reemplaza con una API Key válida obtenida del registro
-
-interface Pasajero {
-  id: string;
-  nombre: string;
-  telefono: string;
-  direccionDomicilio: string;
-  nombreDestino: string;
-  direccionDestino: string;
-  contactos: { id: string; nombre: string; telefono: string }[];
-}
-
 export default function PasajerosClient() {
+  const { user } = useAuth();
   const [pasajeros, setPasajeros] = useState<Pasajero[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchPasajeros = async () => {
+      if (!user?.apiKey) return;
       try {
         setLoading(true);
         const response = await fetch("/api/v1/pasajeros", {
-          headers: { "X-API-Key": API_KEY },
+          headers: { "X-API-Key": user.apiKey },
         });
         if (!response.ok) throw new Error("Error al obtener los pasajeros");
         const data = await response.json();
@@ -64,7 +55,7 @@ export default function PasajerosClient() {
       }
     };
     fetchPasajeros();
-  }, []);
+  }, [user?.apiKey]);
 
   const handleDelete = (id: string) => {
     Modal.confirm({
@@ -74,10 +65,11 @@ export default function PasajerosClient() {
       okType: "danger",
       cancelText: "No",
       onOk: async () => {
+        if (!user?.apiKey) return;
         try {
           const response = await fetch(`/api/v1/pasajeros/${id}`, {
             method: "DELETE",
-            headers: { "X-API-Key": API_KEY },
+            headers: { "X-API-Key": user.apiKey },
           });
           if (!response.ok) throw new Error("Error al eliminar el pasajero");
           setPasajeros((prev) => prev.filter((p) => p.id !== id));

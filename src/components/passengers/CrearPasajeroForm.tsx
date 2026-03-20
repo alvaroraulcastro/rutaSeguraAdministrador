@@ -5,24 +5,31 @@ import { useRouter } from "next/navigation";
 import { Form, Input, Button, Card, Typography, Space, Divider, notification, Row, Col, InputNumber } from "antd";
 import { UserOutlined, PhoneOutlined, HomeOutlined, AimOutlined, PlusOutlined, DeleteOutlined, TeamOutlined } from "@ant-design/icons";
 
+import { useAuth } from "@/contexts/AuthContext";
+
 const { Title } = Typography;
 
-// TODO: Mover a un contexto de autenticación
-const API_KEY = "tu_api_key_aqui";
-
 export default function CrearPasajeroForm() {
+  const { user } = useAuth();
   const [form] = Form.useForm();
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
 
   const onFinish = async (values: unknown) => {
+    if (!user?.apiKey) {
+      notification.error({
+        message: "No autenticado",
+        description: "Inicia sesión para realizar esta acción.",
+      });
+      return;
+    }
     setSubmitting(true);
     try {
       const response = await fetch("/api/v1/pasajeros", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-API-Key": API_KEY,
+          "X-API-Key": user.apiKey,
         },
         body: JSON.stringify(values),
       });

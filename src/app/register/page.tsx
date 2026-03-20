@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Form, Input, Button, Typography, message } from "antd";
-import { UserOutlined, MailOutlined, LockOutlined } from "@ant-design/icons";
+import { UserOutlined, MailOutlined, LockOutlined, PhoneOutlined } from "@ant-design/icons";
 import AuthLayout from "@/components/AuthLayout";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -16,10 +16,11 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
 
   const onFinish = async (values: {
-    name: string;
+    nombre: string;
     email: string;
     password: string;
     confirm: string;
+    telefono: string;
   }) => {
     if (values.password !== values.confirm) {
       message.error("Las contraseñas no coinciden");
@@ -28,13 +29,14 @@ export default function RegisterPage() {
     setLoading(true);
     try {
       const result = await register({
-        name: values.name,
+        nombre: values.nombre,
         email: values.email,
         password: values.password,
+        telefono: values.telefono,
       });
       if (result.ok) {
-        message.success("Cuenta creada. Ya puedes iniciar sesión.");
-        router.replace("/login");
+        message.success("Cuenta creada correctamente");
+        router.replace("/");
       } else {
         message.error(result.message ?? "Error al registrar");
       }
@@ -56,7 +58,7 @@ export default function RegisterPage() {
         autoComplete="off"
       >
         <Form.Item
-          name="name"
+          name="nombre"
           label="Nombre completo"
           rules={[{ required: true, message: "Ingresa tu nombre" }]}
         >
@@ -77,6 +79,17 @@ export default function RegisterPage() {
           <Input
             prefix={<MailOutlined />}
             placeholder="correo@ejemplo.com"
+            size="large"
+          />
+        </Form.Item>
+        <Form.Item
+          name="telefono"
+          label="Teléfono"
+          rules={[{ required: true, message: "Ingresa tu teléfono" }]}
+        >
+          <Input
+            prefix={<PhoneOutlined />}
+            placeholder="+56 9 ..."
             size="large"
           />
         </Form.Item>

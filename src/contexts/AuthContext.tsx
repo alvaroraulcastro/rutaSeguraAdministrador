@@ -7,14 +7,16 @@ const AUTH_STORAGE_KEY = "rutasegura_admin_user";
 export type User = {
   id: string;
   email: string;
-  name: string;
+  nombre: string;
+  rol: string;
+  apiKey: string; // La API Key real (no el hash) para usar en headers
 };
 
 type AuthContextType = {
   user: User | null;
   isLoading: boolean;
-  login: (emailOrUser: string, password: string) => Promise<{ ok: boolean; message?: string }>;
-  register: (data: { name: string; email: string; password: string }) => Promise<{ ok: boolean; message?: string }>;
+  login: (email: string, password: string) => Promise<{ ok: boolean; message?: string }>;
+  register: (data: { nombre: string; email: string; password: string; telefono: string }) => Promise<{ ok: boolean; message?: string }>;
   logout: () => void;
   forgotPassword: (email: string) => Promise<{ ok: boolean; message?: string }>;
 };
@@ -43,28 +45,61 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   });
   const [isLoading] = useState(false);
 
-  const login = useCallback(async (emailOrUser: string, password: string) => {
-    // Mock: aceptar cualquier email/usuario; contraseña cualquiera para demo
-    if (!emailOrUser?.trim()) return { ok: false, message: "Ingresa tu correo o usuario" };
-    if (!password?.trim()) return { ok: false, message: "Ingresa tu contraseña" };
-    const u: User = {
-      id: "1",
-      email: emailOrUser.includes("@") ? emailOrUser : `${emailOrUser}@rutasegura.local`,
-      name: emailOrUser.split("@")[0] || "Usuario",
-    };
-    setUser(u);
-    saveUser(u);
-    return { ok: true };
+  const login = useCallback(async (email: string, password: string) => {
+    try {
+      const response = await fetch("/api/v1/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        return { ok: false, message: data.error || "Error al iniciar sesión" };
+      }
+
+      const u: User = {
+        ...data.user,
+        apiKey: data.apiKey,
+      };
+
+      setUser(u);
+      saveUser(u);
+      return { ok: true };
+    } catch (error) {
+      console.error("Login context error:", error);
+      return { ok: false, message: "Error de conexión con el servidor" };
+    }
   }, []);
 
   const register = useCallback(
-    async (data: { name: string; email: string; password: string }) => {
-      if (!data.name?.trim()) return { ok: false, message: "El nombre es obligatorio" };
-      if (!data.email?.trim()) return { ok: false, message: "El correo es obligatorio" };
-      if (!data.password?.trim()) return { ok: false, message: "La contraseña es obligatoria" };
-      if (data.password.length < 6) return { ok: false, message: "La contraseña debe tener al menos 6 caracteres" };
-      // Mock: registro exitoso, no guardamos usuario hasta que haga login
-      return { ok: true };
+    async (data: { nombre: string; email: string; password: string; telefono: string }) => {
+      try {
+        const response = await fetch("/api/v1/auth/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data),
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+          return { ok: false, message: result.error || "Error al registrarse" };
+        }
+
+        const u: User = {
+          ...result.user,
+          apiKey: result.apiKey,
+        };
+
+        setUser(u);
+        saveUser(u);
+        return { ok: true };
+      } catch (error) {
+        console.error("Register context error:", error);
+        return { ok: false, message: "Error de conexión con el servidor" };
+      }
     },
     []
   );

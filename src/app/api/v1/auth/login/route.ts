@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,15 +24,22 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Credenciales inválidas' }, { status: 401 });
     }
 
-    // En un login tradicional, aquí se generaría un JWT.
-    // Con API Keys, el cliente ya debería tener su clave.
-    // Este endpoint puede servir para validar credenciales y quizás devolver
-    // información del usuario, pero no una nueva API Key en cada login.
+    // Al iniciar sesión, generamos una nueva API Key para el usuario.
+    // Esto actúa como un refresco de sesión en el esquema de "JWT por API Key".
+    const apiKey = crypto.randomBytes(32).toString('hex');
+    const hashedApiKey = await bcrypt.hash(apiKey, 10);
 
-    const { password: _password, apiKey: _apiKey, ...userWithoutSensitiveData } = user;
-    console.log('User sensitive data removed:', { _password: !!_password, _apiKey: !!_apiKey });
+    const updatedUser = await prisma.usuario.update({
+      where: { id: user.id },
+      data: { apiKey: hashedApiKey },
+    });
 
-    return NextResponse.json({ user: userWithoutSensitiveData });
+    const { password: _password, apiKey: _hashedApiKey, ...userWithoutSensitiveData } = updatedUser;
+    
+    return NextResponse.json({ 
+      user: userWithoutSensitiveData, 
+      apiKey: apiKey 
+    });
 
   } catch (error) {
     if (error instanceof z.ZodError) {

@@ -5,93 +5,70 @@ import { useRouter } from "next/navigation";
 import { Form, Input, Button, Select, Card, Typography, Spin, Alert, notification } from "antd";
 import { EnvironmentOutlined, CarOutlined } from "@ant-design/icons";
 
+import { useAuth } from "@/contexts/AuthContext";
+
 const { Title } = Typography;
 const { Option } = Select;
 
-// TODO: Mover a un contexto de autenticación o variable de entorno
-const API_KEY = "tu_api_key_aqui"; // Reemplaza con una API Key válida
-
-interface Transportista {
-  id: string;
-  nombre: string;
-}
-
 interface EditarRutaFormProps {
-  rutaId: string;
+  id: string;
 }
 
-export default function EditarRutaForm({ rutaId }: EditarRutaFormProps) {
+export default function EditarRutaForm({ id }: EditarRutaFormProps) {
+  const { user } = useAuth();
   const [form] = Form.useForm();
   const router = useRouter();
-  const [transportistas, setTransportistas] = useState<Transportista[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [transportistas, setTransportistas] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchData = async () => {
+      if (!user?.apiKey) return;
       try {
-        const [rutaRes, transportistasRes] = await Promise.all([
-          fetch(`/api/v1/rutas/${rutaId}`, { headers: { "X-API-Key": API_KEY } }),
-          fetch("/api/v1/transportistas", { headers: { "X-API-Key": API_KEY } }),
+        const [rutaRes, transRes] = await Promise.all([
+          fetch(`/api/v1/rutas/${id}`, { headers: { "X-API-Key": user.apiKey } }),
+          fetch("/api/v1/transportistas", { headers: { "X-API-Key": user.apiKey } }),
         ]);
 
-        if (!rutaRes.ok) throw new Error("No se pudo cargar la ruta");
-        if (!transportistasRes.ok) throw new Error("No se pudieron cargar los transportistas");
+        if (!rutaRes.ok || !transRes.ok) throw new Error("Error al cargar datos");
 
         const rutaData = await rutaRes.json();
-        const transportistasData = await transportistasRes.json();
+        const transData = await transRes.json();
 
+        setTransportistas(transData);
         form.setFieldsValue({
-          nombre: rutaData.nombre,
-          transportistaId: rutaData.transportistaId,
+          ...rutaData,
+          transportistaId: rutaData.transportistaId || undefined,
         });
-        setTransportistas(transportistasData);
-      } catch (err: unknown) {
-        if (err instanceof Error) {
-          setError(err.message);
-        } else {
-          setError("Ocurrió un error desconocido");
-        }
+      } catch (err: any) {
+        notification.error({ message: "Error", description: err.message });
       } finally {
         setLoading(false);
       }
     };
     fetchData();
-  }, [rutaId, form]);
+  }, [id, form, user?.apiKey]);
 
-  const onFinish = async (values: { nombre: string; transportistaId: string }) => {
-    setSubmitting(true);
+  const onFinish = async (values: any) => {
+    if (!user?.apiKey) return;
     try {
-      const response = await fetch(`/api/v1/rutas/${rutaId}`, {
+      setSubmitting(true);
+      const response = await fetch(`/api/v1/rutas/${id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
-          "X-API-Key": API_KEY,
+          "X-API-Key": user.apiKey,
         },
         body: JSON.stringify(values),
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        const errorMessage = Array.isArray(errorData.error) 
-          ? errorData.error[0]?.message 
-          : errorData.error || "Error al actualizar la ruta";
-        throw new Error(errorMessage);
-      }
+      if (!response.ok) throw new Error("Error al actualizar la ruta");
 
-      notification.success({
-        message: "Ruta Actualizada",
-        description: "La ruta ha sido actualizada exitosamente.",
-      });
+      notification.success({ message: "Ruta actualizada correctamente" });
       router.push("/routes");
-    } catch (err: unknown) {
-      if (err instanceof Error) {
-        notification.error({
-          message: "Error",
-          description: err.message,
-        });
-      }
+    } catch (err: any) {
+      notification.error({ message: "Error", description: err.message });
     } finally {
       setSubmitting(false);
     }
@@ -99,10 +76,6 @@ export default function EditarRutaForm({ rutaId }: EditarRutaFormProps) {
 
   if (loading) {
     return <Spin tip="Cargando datos de la ruta..." />;
-  }
-
-  if (error) {
-    return <Alert message="Error" description={error} type="error" showIcon />;
   }
 
   return (
