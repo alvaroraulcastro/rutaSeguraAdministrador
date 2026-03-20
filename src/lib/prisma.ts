@@ -7,9 +7,9 @@ let prismaInstance: PrismaClient | null = null;
 const prismaClientSingleton = () => {
   if (prismaInstance) return prismaInstance;
 
-  const connectionString = process.env.POSTGRES_URL;
+  const connectionString = process.env.POSTGRES_URL ?? process.env.DATABASE_URL;
   if (!connectionString) {
-    throw new Error('POSTGRES_URL no está configurada (Environment Variables)');
+    throw new Error('POSTGRES_URL o DATABASE_URL no está configurada (Environment Variables)');
   }
 
   const pool = new pg.Pool({ connectionString });
