@@ -89,8 +89,8 @@ export default function SettingsPage() {
       ),
       children: (
         <>
-          <Divider orientation="left">Alertas automáticas</Divider>
-          <Space orientation="vertical" style={{ width: "100%", marginBottom: 24 }} size="middle">
+          <Divider titlePlacement="left">Alertas automáticas</Divider>
+          <Space direction="vertical" style={{ width: "100%", marginBottom: 24 }} size="middle">
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <div>
                 <Text strong>Proximidad (1 minuto)</Text>
@@ -143,17 +143,17 @@ export default function SettingsPage() {
       ),
       children: (
         <>
-          <Divider orientation="left">Tracking GPS</Divider>
+          <Divider titlePlacement="left">Tracking GPS</Divider>
           <Form layout="vertical" onFinish={onFinish}>
             <Form.Item
               name="gpsInterval"
               label="Intervalo de actualización GPS (segundos)"
-              initialValue="10"
+              initialValue={30}
             >
               <Select>
-                <Option value="5">5 segundos (máxima precisión)</Option>
-                <Option value="10">10 segundos (recomendado)</Option>
-                <Option value="30">30 segundos (ahorro batería)</Option>
+                <Option value={10}>10 segundos</Option>
+                <Option value={30}>30 segundos</Option>
+                <Option value={60}>60 segundos</Option>
               </Select>
             </Form.Item>
             <Form.Item>
@@ -162,6 +162,11 @@ export default function SettingsPage() {
               </Button>
             </Form.Item>
           </Form>
+
+          <Divider titlePlacement="left">API Keys</Divider>
+          <Space direction="vertical" style={{ width: "100%" }} size="middle">
+            {/* Aquí se podrían añadir campos para regenerar API Keys */}
+          </Space>
         </>
       ),
     },

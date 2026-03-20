@@ -117,7 +117,7 @@ export default function RutasClient() {
       dataIndex: "nombre",
       key: "nombre",
       render: (text: string, record: Ruta) => (
-        <Space orientation="vertical" size={0}>
+        <Space direction="vertical" size={0}>
           <Space>
             <EnvironmentOutlined style={{ color: "#1677ff" }} />
             <Text strong>{text}</Text>

@@ -74,7 +74,7 @@ export default function NotificationsPage() {
       dataIndex: "passenger",
       key: "passenger",
       render: (t, r) => (
-        <Space orientation="vertical" size={0}>
+        <Space direction="vertical" size={0}>
           <Text strong>{t}</Text>
           {r.destinatario && (
             <Text type="secondary" style={{ fontSize: 12 }}>→ {r.destinatario}</Text>

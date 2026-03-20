@@ -14,6 +14,6 @@ export const crearViajeSchema = z.object({
 
 export const actualizarViajeSchema = z.object({
   estado: z.enum(['PENDIENTE', 'EN_CURSO', 'COMPLETADO', 'CANCELADO'], {
-    errorMap: () => ({ message: 'El estado proporcionado no es válido' }),
+    message: 'El estado proporcionado no es válido',
   }),
 });
