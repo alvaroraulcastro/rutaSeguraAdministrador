@@ -11,5 +11,5 @@ export default function EditRoutePage() {
     return <div>ID de ruta no válido</div>;
   }
 
-  return <EditarRutaForm rutaId={id} />;
+  return <EditarRutaForm id={id} />;
 }

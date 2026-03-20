@@ -27,10 +27,9 @@ import {
   CalendarOutlined,
 } from "@ant-design/icons";
 
-const { Title, Text } = Typography;
+import { useAuth } from "@/contexts/AuthContext";
 
-// TODO: Mover a un contexto de autenticación o variable de entorno
-const API_KEY = "tu_api_key_aqui"; // Reemplaza con una API Key válida obtenida del registro
+const { Title, Text } = Typography;
 
 interface Ruta {
   id: string;
@@ -41,17 +40,19 @@ interface Ruta {
 }
 
 export default function RutasClient() {
+  const { user } = useAuth();
   const [rutas, setRutas] = useState<Ruta[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchRutas = async () => {
+      if (!user?.apiKey) return;
       try {
         setLoading(true);
         const response = await fetch("/api/v1/rutas", {
           headers: {
-            "X-API-Key": API_KEY,
+            "X-API-Key": user.apiKey,
           },
         });
 
@@ -74,7 +75,7 @@ export default function RutasClient() {
     };
 
     fetchRutas();
-  }, []);
+  }, [user?.apiKey]);
 
   const handleDelete = (id: string) => {
     Modal.confirm({
@@ -84,10 +85,11 @@ export default function RutasClient() {
       okType: "danger",
       cancelText: "No, cancelar",
       onOk: async () => {
+        if (!user?.apiKey) return;
         try {
           const response = await fetch(`/api/v1/rutas/${id}`, {
             method: "DELETE",
-            headers: { "X-API-Key": API_KEY },
+            headers: { "X-API-Key": user.apiKey },
           });
 
           if (!response.ok) {

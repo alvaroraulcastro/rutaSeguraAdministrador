@@ -4,10 +4,10 @@ import React, { useState, useEffect } from "react";
 import { Table, Button, Space, Card, Typography, Select, notification, Spin, Modal } from "antd";
 import { PlusOutlined, DeleteOutlined, ArrowUpOutlined, ArrowDownOutlined } from "@ant-design/icons";
 
+import { useAuth } from "@/contexts/AuthContext";
+
 const { Title } = Typography;
 const { Option } = Select;
-
-const API_KEY = "tu_api_key_aqui";
 
 interface Pasajero {
   id: string;
@@ -27,17 +27,19 @@ interface GestionarParadasProps {
 }
 
 export default function GestionarParadas({ rutaId }: GestionarParadasProps) {
+  const { user } = useAuth();
   const [paradas, setParadas] = useState<Parada[]>([]);
   const [pasajeros, setPasajeros] = useState<Pasajero[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedPasajero, setSelectedPasajero] = useState<string | null>(null);
 
   const fetchData = async () => {
+    if (!user?.apiKey) return;
     try {
       setLoading(true);
       const [paradasRes, pasajerosRes] = await Promise.all([
-        fetch(`/api/v1/rutas/${rutaId}/paradas`, { headers: { "X-API-Key": API_KEY } }),
-        fetch("/api/v1/pasajeros", { headers: { "X-API-Key": API_KEY } }),
+        fetch(`/api/v1/rutas/${rutaId}/paradas`, { headers: { "X-API-Key": user.apiKey } }),
+        fetch("/api/v1/pasajeros", { headers: { "X-API-Key": user.apiKey } }),
       ]);
 
       if (!paradasRes.ok || !pasajerosRes.ok) throw new Error("Error al cargar datos");
@@ -59,14 +61,14 @@ export default function GestionarParadas({ rutaId }: GestionarParadasProps) {
   useEffect(() => {
     fetchData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rutaId]);
+  }, [rutaId, user?.apiKey]);
 
   const handleAddParada = async () => {
-    if (!selectedPasajero) return;
+    if (!selectedPasajero || !user?.apiKey) return;
     try {
       const response = await fetch(`/api/v1/rutas/${rutaId}/paradas`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", "X-API-Key": API_KEY },
+        headers: { "Content-Type": "application/json", "X-API-Key": user.apiKey },
         body: JSON.stringify({ pasajeroId: selectedPasajero, orden: paradas.length + 1 }),
       });
 
@@ -86,10 +88,11 @@ export default function GestionarParadas({ rutaId }: GestionarParadasProps) {
     Modal.confirm({
       title: "¿Eliminar esta parada de la ruta?",
       onOk: async () => {
+        if (!user?.apiKey) return;
         try {
           const response = await fetch(`/api/v1/rutas/${rutaId}/paradas/${paradaId}`, {
             method: "DELETE",
-            headers: { "X-API-Key": API_KEY },
+            headers: { "X-API-Key": user.apiKey },
           });
           if (!response.ok) throw new Error("Error al eliminar");
           fetchData();
@@ -104,6 +107,7 @@ export default function GestionarParadas({ rutaId }: GestionarParadasProps) {
   };
 
   const handleReorder = async (paradaId: string, direction: 'up' | 'down') => {
+    if (!user?.apiKey) return;
     const index = paradas.findIndex(p => p.id === paradaId);
     if ((direction === 'up' && index === 0) || (direction === 'down' && index === paradas.length - 1)) return;
 
@@ -117,7 +121,7 @@ export default function GestionarParadas({ rutaId }: GestionarParadasProps) {
     try {
       const response = await fetch(`/api/v1/rutas/${rutaId}/paradas`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json", "X-API-Key": API_KEY },
+        headers: { "Content-Type": "application/json", "X-API-Key": user.apiKey },
         body: JSON.stringify(updatePayload),
       });
       if (!response.ok) throw new Error("Error al reordenar");

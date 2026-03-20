@@ -5,11 +5,10 @@ import { useRouter } from "next/navigation";
 import { Form, Input, Button, Select, Card, Typography, Spin, Alert, notification } from "antd";
 import { EnvironmentOutlined, CarOutlined } from "@ant-design/icons";
 
+import { useAuth } from "@/contexts/AuthContext";
+
 const { Title } = Typography;
 const { Option } = Select;
-
-// TODO: Mover a un contexto de autenticación o variable de entorno
-const API_KEY = "tu_api_key_aqui"; // Reemplaza con una API Key válida
 
 interface Transportista {
   id: string;
@@ -17,6 +16,7 @@ interface Transportista {
 }
 
 export default function CrearRutaForm() {
+  const { user } = useAuth();
   const [form] = Form.useForm();
   const router = useRouter();
   const [transportistas, setTransportistas] = useState<Transportista[]>([]);
@@ -26,9 +26,10 @@ export default function CrearRutaForm() {
 
   useEffect(() => {
     const fetchTransportistas = async () => {
+      if (!user?.apiKey) return;
       try {
         const response = await fetch("/api/v1/transportistas", {
-          headers: { "X-API-Key": API_KEY },
+          headers: { "X-API-Key": user.apiKey },
         });
         if (!response.ok) throw new Error("No se pudieron cargar los transportistas");
         const data = await response.json();
@@ -44,16 +45,17 @@ export default function CrearRutaForm() {
       }
     };
     fetchTransportistas();
-  }, []);
+  }, [user?.apiKey]);
 
   const onFinish = async (values: { nombre: string; transportistaId: string }) => {
+    if (!user?.apiKey) return;
     setSubmitting(true);
     try {
       const response = await fetch("/api/v1/rutas", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-API-Key": API_KEY,
+          "X-API-Key": user.apiKey,
         },
         body: JSON.stringify(values),
       });

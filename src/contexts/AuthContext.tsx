@@ -3,18 +3,21 @@
 import React, { createContext, useContext, useState, useCallback } from "react";
 
 const AUTH_STORAGE_KEY = "rutasegura_admin_user";
+const AUTH_DEBUG_STORAGE_KEY = "rutasegura_debug_auth";
 
 export type User = {
   id: string;
   email: string;
-  name: string;
+  nombre: string;
+  rol: string;
+  apiKey: string; // La API Key real (no el hash) para usar en headers
 };
 
 type AuthContextType = {
   user: User | null;
   isLoading: boolean;
-  login: (emailOrUser: string, password: string) => Promise<{ ok: boolean; message?: string }>;
-  register: (data: { name: string; email: string; password: string }) => Promise<{ ok: boolean; message?: string }>;
+  login: (email: string, password: string) => Promise<{ ok: boolean; message?: string }>;
+  register: (data: { nombre: string; email: string; password: string; telefono: string }) => Promise<{ ok: boolean; message?: string }>;
   logout: () => void;
   forgotPassword: (email: string) => Promise<{ ok: boolean; message?: string }>;
 };
@@ -25,6 +28,22 @@ function saveUser(user: User | null) {
   if (typeof window === "undefined") return;
   if (user) localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(user));
   else localStorage.removeItem(AUTH_STORAGE_KEY);
+}
+
+function shouldLogAuth() {
+  if (typeof window === "undefined") return false;
+  const localFlag = localStorage.getItem(AUTH_DEBUG_STORAGE_KEY) === "1";
+  const urlFlag = new URLSearchParams(window.location.search).get("debugAuth") === "1";
+  return localFlag || urlFlag;
+}
+
+function maskEmail(email: string) {
+  const at = email.indexOf("@");
+  if (at <= 0) return "***";
+  const userPart = email.slice(0, at);
+  const domainPart = email.slice(at + 1);
+  const maskedUser = `${userPart[0]}***`;
+  return `${maskedUser}@${domainPart}`;
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -42,31 +61,99 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return null;
   });
   const [isLoading] = useState(false);
+  const isProd = process.env.NODE_ENV === "production";
 
-  const login = useCallback(async (emailOrUser: string, password: string) => {
-    // Mock: aceptar cualquier email/usuario; contraseña cualquiera para demo
-    if (!emailOrUser?.trim()) return { ok: false, message: "Ingresa tu correo o usuario" };
-    if (!password?.trim()) return { ok: false, message: "Ingresa tu contraseña" };
-    const u: User = {
-      id: "1",
-      email: emailOrUser.includes("@") ? emailOrUser : `${emailOrUser}@rutasegura.local`,
-      name: emailOrUser.split("@")[0] || "Usuario",
-    };
-    setUser(u);
-    saveUser(u);
-    return { ok: true };
-  }, []);
+  const login = useCallback(async (email: string, password: string) => {
+    const requestId =
+      typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now()}`;
+    try {
+      const shouldLog = !isProd || shouldLogAuth();
+      if (shouldLog) {
+        console.log("[auth.login.client.before_request]", {
+          requestId,
+          url: "/api/v1/auth/login",
+          method: "POST",
+          email: maskEmail(email),
+        });
+      }
+      const response = await fetch("/api/v1/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (!isProd || shouldLogAuth()) {
+        console.log("[auth.login.client.after_response]", {
+          requestId,
+          status: response.status,
+          ok: response.ok,
+        });
+      }
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        if (!isProd || shouldLogAuth()) {
+          console.log("[auth.login.client.error_payload]", {
+            requestId,
+            error: data?.error ?? null,
+          });
+        }
+        return { ok: false, message: data.error || "Error al iniciar sesión" };
+      }
+
+      const u: User = {
+        ...data.user,
+        apiKey: data.apiKey,
+      };
+
+      setUser(u);
+      saveUser(u);
+      if (!isProd || shouldLogAuth()) {
+        console.log("[auth.login.client.success]", { requestId, userId: u.id });
+      }
+      return { ok: true };
+    } catch (error) {
+      if (!isProd || shouldLogAuth()) {
+        console.log("[auth.login.client.exception]", { requestId, error });
+      }
+      console.error("Login context error:", error);
+      return { ok: false, message: "Error de conexión con el servidor" };
+    }
+  }, [isProd]);
 
   const register = useCallback(
-    async (data: { name: string; email: string; password: string }) => {
-      if (!data.name?.trim()) return { ok: false, message: "El nombre es obligatorio" };
-      if (!data.email?.trim()) return { ok: false, message: "El correo es obligatorio" };
-      if (!data.password?.trim()) return { ok: false, message: "La contraseña es obligatoria" };
-      if (data.password.length < 6) return { ok: false, message: "La contraseña debe tener al menos 6 caracteres" };
-      // Mock: registro exitoso, no guardamos usuario hasta que haga login
-      return { ok: true };
+    async (data: { nombre: string; email: string; password: string; telefono: string }) => {
+      try {
+        if (!isProd) console.debug("[auth.register.client.start]", { email: data.email });
+        const response = await fetch("/api/v1/auth/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data),
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+          if (!isProd) console.debug("[auth.register.client.fail]", { status: response.status, error: result?.error });
+          return { ok: false, message: result.error || "Error al registrarse" };
+        }
+
+        const u: User = {
+          ...result.user,
+          apiKey: result.apiKey,
+        };
+
+        setUser(u);
+        saveUser(u);
+        if (!isProd) console.debug("[auth.register.client.success]", { userId: u.id });
+        return { ok: true };
+      } catch (error) {
+        console.error("Register context error:", error);
+        return { ok: false, message: "Error de conexión con el servidor" };
+      }
     },
-    []
+    [isProd]
   );
 
   const logout = useCallback(() => {

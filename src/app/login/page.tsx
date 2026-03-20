@@ -15,10 +15,23 @@ export default function LoginPage() {
   const { login } = useAuth();
   const [loading, setLoading] = useState(false);
 
-  const onFinish = async (values: { emailOrUser: string; password: string }) => {
+  const shouldLog = () => {
+    if (typeof window === "undefined") return false;
+    const localFlag = localStorage.getItem("rutasegura_debug_auth") === "1";
+    const urlFlag = new URLSearchParams(window.location.search).get("debugAuth") === "1";
+    return localFlag || urlFlag;
+  };
+
+  const onFinish = async (values: { email: string; password: string }) => {
     setLoading(true);
     try {
-      const result = await login(values.emailOrUser, values.password);
+      if (shouldLog()) {
+        console.log("[login.page.before_submit]", { email: values.email });
+      }
+      const result = await login(values.email, values.password);
+      if (shouldLog()) {
+        console.log("[login.page.after_submit]", { ok: result.ok, message: result.message ?? null });
+      }
       if (result.ok) {
         message.success("Sesión iniciada correctamente");
         router.replace("/");
@@ -33,7 +46,7 @@ export default function LoginPage() {
   return (
     <AuthLayout
       title="Iniciar sesión"
-      subtitle="Ingresa con tu correo o usuario y contraseña para acceder al panel."
+      subtitle="Ingresa con tu correo y contraseña para acceder al panel."
     >
       <Form
         name="login"
@@ -43,13 +56,16 @@ export default function LoginPage() {
         autoComplete="off"
       >
         <Form.Item
-          name="emailOrUser"
-          label="Correo o usuario"
-          rules={[{ required: true, message: "Ingresa tu correo o usuario" }]}
+          name="email"
+          label="Correo electrónico"
+          rules={[
+            { required: true, message: "Ingresa tu correo" },
+            { type: "email", message: "Ingresa un correo válido" }
+          ]}
         >
           <Input
             prefix={<UserOutlined />}
-            placeholder="correo@ejemplo.com o usuario"
+            placeholder="correo@ejemplo.com"
             size="large"
           />
         </Form.Item>
