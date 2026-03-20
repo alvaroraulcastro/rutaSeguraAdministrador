@@ -6,6 +6,7 @@ import crypto from 'crypto';
 import { getCorsHeaders } from '@/lib/cors';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 const loginSchema = z.object({
   email: z.string().email(),
