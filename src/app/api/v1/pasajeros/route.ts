@@ -4,6 +4,8 @@ import { z } from 'zod';
 import { crearPasajeroSchema } from '@/lib/schemas/pasajero';
 import { validarApiKey } from '@/lib/auth';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: Request) {
   try {
     const apiKey = request.headers.get('X-API-Key');

@@ -4,6 +4,8 @@ import { z } from 'zod';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 
+export const dynamic = 'force-dynamic';
+
 const registerSchema = z.object({
   nombre: z.string().min(3),
   email: z.string().email(),

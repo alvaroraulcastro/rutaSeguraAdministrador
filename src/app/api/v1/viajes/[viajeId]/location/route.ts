@@ -4,6 +4,8 @@ import { z } from 'zod';
 import { locationSchema } from '@/lib/schemas/location';
 import { validarApiKey } from '@/lib/auth';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: NextRequest, context: { params: Promise<{ viajeId: string }> }) {
   try {
     const { viajeId } = await context.params;

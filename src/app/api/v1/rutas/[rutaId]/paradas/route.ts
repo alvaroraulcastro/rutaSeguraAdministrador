@@ -4,6 +4,8 @@ import { z } from 'zod';
 import { crearParadaSchema, reordenarParadasSchema } from '@/lib/schemas/parada';
 import { validarApiKey } from '@/lib/auth';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest, context: { params: Promise<{ rutaId: string }> }) {
   try {
     const { rutaId } = await context.params;
