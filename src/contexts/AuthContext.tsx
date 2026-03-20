@@ -44,9 +44,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return null;
   });
   const [isLoading] = useState(false);
+  const isProd = process.env.NODE_ENV === "production";
 
   const login = useCallback(async (email: string, password: string) => {
     try {
+      if (!isProd) console.debug("[auth.login.client.start]", { email });
       const response = await fetch("/api/v1/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -56,6 +58,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const data = await response.json();
 
       if (!response.ok) {
+        if (!isProd) console.debug("[auth.login.client.fail]", { status: response.status, error: data?.error });
         return { ok: false, message: data.error || "Error al iniciar sesión" };
       }
 
@@ -66,16 +69,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       setUser(u);
       saveUser(u);
+      if (!isProd) console.debug("[auth.login.client.success]", { userId: u.id });
       return { ok: true };
     } catch (error) {
       console.error("Login context error:", error);
       return { ok: false, message: "Error de conexión con el servidor" };
     }
-  }, []);
+  }, [isProd]);
 
   const register = useCallback(
     async (data: { nombre: string; email: string; password: string; telefono: string }) => {
       try {
+        if (!isProd) console.debug("[auth.register.client.start]", { email: data.email });
         const response = await fetch("/api/v1/auth/register", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -85,6 +90,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const result = await response.json();
 
         if (!response.ok) {
+          if (!isProd) console.debug("[auth.register.client.fail]", { status: response.status, error: result?.error });
           return { ok: false, message: result.error || "Error al registrarse" };
         }
 
@@ -95,13 +101,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         setUser(u);
         saveUser(u);
+        if (!isProd) console.debug("[auth.register.client.success]", { userId: u.id });
         return { ok: true };
       } catch (error) {
         console.error("Register context error:", error);
         return { ok: false, message: "Error de conexión con el servidor" };
       }
     },
-    []
+    [isProd]
   );
 
   const logout = useCallback(() => {
