@@ -96,30 +96,46 @@ export default function DriversPage() {
       dataIndex: "name",
       key: "name",
       render: (text: string, record: (typeof MOCK_DRIVERS)[0]) => (
-        <Space orientation="vertical" size={0}>
+        <Space direction="vertical" size={0}>
           <Space>
-            <Avatar icon={<UserOutlined />} style={{ backgroundColor: "#1677ff" }} />
-            <div>
-              <Text strong>{text}</Text>
-              <br />
-              <Text type="secondary" style={{ fontSize: 12 }}>
-                <MailOutlined /> {record.email}
-              </Text>
-            </div>
+            <Avatar icon={<UserOutlined />} />
+            <Text strong>{text}</Text>
           </Space>
           <Text type="secondary" style={{ fontSize: 12 }}>
-            <PhoneOutlined /> {record.phone}
+            {record.rut}
           </Text>
         </Space>
       ),
     },
     {
       title: "Vehículo",
+      dataIndex: "vehicle",
       key: "vehicle",
-      render: (_: unknown, record: (typeof MOCK_DRIVERS)[0]) => (
-        <Space orientation="vertical" size={0}>
-          <Text>{record.vehicle}</Text>
-          <Tag color="gold">{record.plate}</Tag>
+      render: (text: string, record: (typeof MOCK_DRIVERS)[0]) => (
+        <Space direction="vertical" size={0}>
+          <Space>
+            <CarOutlined />
+            <Text>{text}</Text>
+          </Space>
+          <Tag color="blue">{record.plate}</Tag>
+        </Space>
+      ),
+    },
+    {
+      title: "Contacto",
+      key: "contact",
+      render: (_: any, record: (typeof MOCK_DRIVERS)[0]) => (
+        <Space direction="vertical" size={0}>
+          <Space>
+            <PhoneOutlined style={{ fontSize: 12 }} />
+            <Text style={{ fontSize: 12 }}>{record.phone}</Text>
+          </Space>
+          <Space>
+            <MailOutlined style={{ fontSize: 12 }} />
+            <Text style={{ fontSize: 12 }} type="secondary">
+              {record.email}
+            </Text>
+          </Space>
         </Space>
       ),
     },

@@ -61,11 +61,11 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
 
   // Obtener el nombre de la página actual para el breadcrumb
   const getPageName = () => {
-    const item = items.find((i) => i?.key === pathname);
-    if (!item) return "Dashboard";
+    const item = items.find((i) => i && "key" in i && i.key === pathname);
+    if (!item || !("label" in item)) return "Dashboard";
     // Extraer el texto del label que es un Link
-    const label = item.label as React.ReactElement;
-    return label.props.children;
+    const label = item.label as any;
+    return label?.props?.children || "Dashboard";
   };
 
   return (

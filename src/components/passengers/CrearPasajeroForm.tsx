@@ -57,7 +57,7 @@ export default function CrearPasajeroForm() {
       <Title level={4}>Registrar Nuevo Pasajero</Title>
       <Form form={form} layout="vertical" onFinish={onFinish} initialValues={{ contactos: [{ canal: 'PUSH' }] }}>
         
-        <Divider orientation="left"><UserOutlined /> Información Personal</Divider>
+        <Divider titlePlacement="left"><UserOutlined /> Información Personal</Divider>
         <Row gutter={16}>
           <Col span={12}>
             <Form.Item name="nombre" label="Nombre Completo" rules={[{ required: true }]}>
@@ -71,7 +71,7 @@ export default function CrearPasajeroForm() {
           </Col>
         </Row>
 
-        <Divider orientation="left"><HomeOutlined /> Domicilio (Origen)</Divider>
+        <Divider titlePlacement="left"><HomeOutlined /> Domicilio (Origen)</Divider>
         <Form.Item name="direccionDomicilio" label="Dirección de Recogida" rules={[{ required: true }]}>
           <Input placeholder="Calle, Número, Comuna" />
         </Form.Item>
@@ -93,7 +93,7 @@ export default function CrearPasajeroForm() {
           </Col>
         </Row>
 
-        <Divider orientation="left"><AimOutlined /> Destino</Divider>
+        <Divider titlePlacement="left"><AimOutlined /> Destino</Divider>
         <Form.Item name="nombreDestino" label="Nombre del Destino (Colegio/Empresa)" rules={[{ required: true }]}>
           <Input placeholder="Ej: Colegio Saint George" />
         </Form.Item>
@@ -113,7 +113,7 @@ export default function CrearPasajeroForm() {
           </Col>
         </Row>
 
-        <Divider orientation="left"><TeamOutlined /> Contactos de Notificación</Divider>
+        <Divider titlePlacement="left"><TeamOutlined /> Contactos de Notificación</Divider>
         <Form.List name="contactos">
           {(fields, { add, remove }) => (
             <>
