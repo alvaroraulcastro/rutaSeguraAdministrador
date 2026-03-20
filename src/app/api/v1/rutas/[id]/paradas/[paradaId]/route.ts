@@ -3,9 +3,12 @@ import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
 import { validarApiKey } from '@/lib/auth';
 
-export async function DELETE(request: NextRequest, context: { params: Promise<{ rutaId: string; paradaId: string }> }) {
+export async function DELETE(
+  request: NextRequest,
+  context: { params: Promise<{ id: string; paradaId: string }> }
+) {
   try {
-    const { rutaId, paradaId } = await context.params;
+    const { id: rutaId, paradaId } = await context.params;
     const apiKey = request.headers.get('X-API-Key');
     const usuario = await validarApiKey(apiKey);
 
@@ -16,8 +19,7 @@ export async function DELETE(request: NextRequest, context: { params: Promise<{ 
     await prisma.parada.delete({
       where: {
         id: paradaId,
-        // Aseguramos que la parada pertenezca a la ruta correcta
-        rutaId: rutaId,
+        rutaId,
       },
     });
 
@@ -33,3 +35,4 @@ export async function DELETE(request: NextRequest, context: { params: Promise<{ 
     return NextResponse.json({ error: 'Error al eliminar la parada' }, { status: 500 });
   }
 }
+

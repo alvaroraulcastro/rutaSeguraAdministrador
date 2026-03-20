@@ -6,9 +6,9 @@ import { validarApiKey } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET(request: NextRequest, context: { params: Promise<{ rutaId: string }> }) {
+export async function GET(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
-    const { rutaId } = await context.params;
+    const { id: rutaId } = await context.params;
     const apiKey = request.headers.get('X-API-Key');
     const usuario = await validarApiKey(apiKey);
 
@@ -28,9 +28,9 @@ export async function GET(request: NextRequest, context: { params: Promise<{ rut
   }
 }
 
-export async function POST(request: NextRequest, context: { params: Promise<{ rutaId: string }> }) {
+export async function POST(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
-    const { rutaId } = await context.params;
+    const { id: rutaId } = await context.params;
     const apiKey = request.headers.get('X-API-Key');
     const usuario = await validarApiKey(apiKey);
 
@@ -59,9 +59,9 @@ export async function POST(request: NextRequest, context: { params: Promise<{ ru
   }
 }
 
-export async function PUT(request: NextRequest, context: { params: Promise<{ rutaId: string }> }) {
+export async function PUT(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
-    const { rutaId } = await context.params;
+    const { id: rutaId } = await context.params;
     const apiKey = request.headers.get('X-API-Key');
     const usuario = await validarApiKey(apiKey);
 
@@ -72,8 +72,7 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ rut
     const data = await request.json();
     const validatedData = reordenarParadasSchema.parse(data);
 
-    // Para reordenar, ejecutamos múltiples actualizaciones en una transacción
-    const transaccion = validatedData.map(parada => 
+    const transaccion = validatedData.map(parada =>
       prisma.parada.update({
         where: { id: parada.id, rutaId },
         data: { orden: parada.orden },
@@ -92,3 +91,4 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ rut
     return NextResponse.json({ error: 'Error al reordenar las paradas' }, { status: 500 });
   }
 }
+
