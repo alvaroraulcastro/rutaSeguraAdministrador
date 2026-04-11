@@ -7,6 +7,13 @@ const publicRoutes = [
   '/api/v1/auth/register',
 ];
 
+function hasApiKeyOrBearer(request: NextRequest): boolean {
+  if (request.headers.get('X-API-Key')?.trim()) return true;
+  const auth = request.headers.get('Authorization');
+  if (auth?.startsWith('Bearer ') && auth.slice(7).trim()) return true;
+  return false;
+}
+
 export function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
 
@@ -19,11 +26,12 @@ export function middleware(request: NextRequest) {
   // sin configuración adicional (Accelerate).
   // Por ahora, solo verificamos que el encabezado exista.
   // La validación real se realizará en las API Routes (Node.js Runtime).
-  const apiKey = request.headers.get('X-API-Key');
-
-  if (!apiKey) {
+  if (!hasApiKeyOrBearer(request)) {
     return new NextResponse(
-      JSON.stringify({ success: false, message: 'API Key no proporcionada' }),
+      JSON.stringify({
+        success: false,
+        message: 'API Key no proporcionada. Usa el header X-API-Key o Authorization: Bearer.',
+      }),
       { status: 401, headers: { 'Content-Type': 'application/json' } }
     );
   }
