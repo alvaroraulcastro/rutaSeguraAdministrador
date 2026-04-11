@@ -2,6 +2,7 @@ import "dotenv/config";
 import { PrismaClient, TipoRuta, EstadoViaje, CanalNotificacion, Rol } from '@prisma/client'
 import { PrismaPg } from '@prisma/adapter-pg'
 import pg from 'pg'
+import bcrypt from 'bcryptjs'
 
 const pool = new pg.Pool({ connectionString: process.env.POSTGRES_URL })
 const adapter = new PrismaPg(pool)
@@ -9,6 +10,11 @@ const prisma = new PrismaClient({ adapter })
 
 async function main() {
   console.log('Iniciando seeding...')
+
+  // 0. Preparar passwords
+  const passwordAdmin = await bcrypt.hash('admin123', 10);
+  const passwordDriver1 = await bcrypt.hash('driver123', 10);
+  const passwordDriver2 = await bcrypt.hash('driver123', 10);
 
   // 1. Limpiar la base de datos
   await prisma.logPeticion.deleteMany()
@@ -25,7 +31,7 @@ async function main() {
     data: {
       nombre: 'Admin Sistema',
       email: 'admin@rutasegura.com',
-      password: 'hashed_password_123', // En producción usar bcrypt/argon2
+      password: passwordAdmin,
       rol: Rol.ADMIN,
       telefono: '+56900000000',
     },
@@ -35,7 +41,7 @@ async function main() {
     data: {
       nombre: 'Juan Pérez',
       email: 'juan.perez@example.com',
-      password: 'hashed_password_driver1',
+      password: passwordDriver1,
       rol: Rol.TRANSPORTISTA,
       telefono: '+56912345678',
       patente: 'ABCD-12',
@@ -48,7 +54,7 @@ async function main() {
     data: {
       nombre: 'María González',
       email: 'maria.gonzalez@example.com',
-      password: 'hashed_password_driver2',
+      password: passwordDriver2,
       rol: Rol.TRANSPORTISTA,
       telefono: '+56987654321',
       patente: 'FGHI-34',
