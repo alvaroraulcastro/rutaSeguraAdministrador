@@ -47,6 +47,8 @@ model Usuario {
 
   rutas     Ruta[]
   logs      LogPeticion[]
+  resetToken       String?  @unique
+  resetTokenExpiry DateTime?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
