@@ -1,6 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useCallback } from "react";
+import { getApiUrl } from "@/lib/api";
 
 const AUTH_STORAGE_KEY = "rutasegura_admin_user";
 const AUTH_DEBUG_STORAGE_KEY = "rutasegura_debug_auth";
@@ -71,12 +72,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (shouldLog) {
         console.log("[auth.login.client.before_request]", {
           requestId,
-          url: "/api/v1/auth/login",
+          url: getApiUrl("/api/v1/auth/login"),
           method: "POST",
           email: maskEmail(email),
         });
       }
-      const response = await fetch("/api/v1/auth/login", {
+      const response = await fetch(getApiUrl("/api/v1/auth/login"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
@@ -126,7 +127,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     async (data: { nombre: string; email: string; password: string; telefono: string }) => {
       try {
         if (!isProd) console.debug("[auth.register.client.start]", { email: data.email });
-        const response = await fetch("/api/v1/auth/register", {
+        const response = await fetch(getApiUrl("/api/v1/auth/register"), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(data),
@@ -163,8 +164,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const forgotPassword = useCallback(async (email: string) => {
     if (!email?.trim()) return { ok: false, message: "Ingresa tu correo" };
-    // Mock: siempre éxito
-    return { ok: true };
+    try {
+      const response = await fetch(getApiUrl("/api/v1/auth/forgot-password"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      const data = await response.json();
+      if (!response.ok) return { ok: false, message: data.error || "Error al solicitar recuperación" };
+      return { ok: true, message: data.message };
+    } catch (error) {
+      console.error("ForgotPassword context error:", error);
+      return { ok: false, message: "Error de conexión con el servidor" };
+    }
   }, []);
 
   return (

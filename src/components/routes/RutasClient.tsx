@@ -28,6 +28,7 @@ import {
 } from "@ant-design/icons";
 
 import { useAuth } from "@/contexts/AuthContext";
+import { getApiUrl } from "@/lib/api";
 
 const { Title, Text } = Typography;
 
@@ -50,7 +51,7 @@ export default function RutasClient() {
       if (!user?.apiKey) return;
       try {
         setLoading(true);
-        const response = await fetch("/api/v1/rutas", {
+        const response = await fetch(getApiUrl("/api/v1/rutas"), {
           headers: {
             "X-API-Key": user.apiKey,
           },
@@ -87,7 +88,7 @@ export default function RutasClient() {
       onOk: async () => {
         if (!user?.apiKey) return;
         try {
-          const response = await fetch(`/api/v1/rutas/${id}`, {
+          const response = await fetch(getApiUrl(`/api/v1/rutas/${id}`), {
             method: "DELETE",
             headers: { "X-API-Key": user.apiKey },
           });

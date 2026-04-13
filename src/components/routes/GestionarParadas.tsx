@@ -5,6 +5,7 @@ import { Table, Button, Space, Card, Typography, Select, notification, Spin, Mod
 import { PlusOutlined, DeleteOutlined, ArrowUpOutlined, ArrowDownOutlined } from "@ant-design/icons";
 
 import { useAuth } from "@/contexts/AuthContext";
+import { getApiUrl } from "@/lib/api";
 
 const { Title } = Typography;
 const { Option } = Select;
@@ -38,8 +39,8 @@ export default function GestionarParadas({ rutaId }: GestionarParadasProps) {
     try {
       setLoading(true);
       const [paradasRes, pasajerosRes] = await Promise.all([
-        fetch(`/api/v1/rutas/${rutaId}/paradas`, { headers: { "X-API-Key": user.apiKey } }),
-        fetch("/api/v1/pasajeros", { headers: { "X-API-Key": user.apiKey } }),
+        fetch(getApiUrl(`/api/v1/rutas/${rutaId}/paradas`), { headers: { "X-API-Key": user.apiKey } }),
+        fetch(getApiUrl("/api/v1/pasajeros"), { headers: { "X-API-Key": user.apiKey } }),
       ]);
 
       if (!paradasRes.ok || !pasajerosRes.ok) throw new Error("Error al cargar datos");
@@ -66,7 +67,7 @@ export default function GestionarParadas({ rutaId }: GestionarParadasProps) {
   const handleAddParada = async () => {
     if (!selectedPasajero || !user?.apiKey) return;
     try {
-      const response = await fetch(`/api/v1/rutas/${rutaId}/paradas`, {
+      const response = await fetch(getApiUrl(`/api/v1/rutas/${rutaId}/paradas`), {
         method: "POST",
         headers: { "Content-Type": "application/json", "X-API-Key": user.apiKey },
         body: JSON.stringify({ pasajeroId: selectedPasajero, orden: paradas.length + 1 }),
@@ -90,7 +91,7 @@ export default function GestionarParadas({ rutaId }: GestionarParadasProps) {
       onOk: async () => {
         if (!user?.apiKey) return;
         try {
-          const response = await fetch(`/api/v1/rutas/${rutaId}/paradas/${paradaId}`, {
+          const response = await fetch(getApiUrl(`/api/v1/rutas/${rutaId}/paradas/${paradaId}`), {
             method: "DELETE",
             headers: { "X-API-Key": user.apiKey },
           });
@@ -119,7 +120,7 @@ export default function GestionarParadas({ rutaId }: GestionarParadasProps) {
     const updatePayload = newParadas.map((p, i) => ({ id: p.id, orden: i + 1 }));
 
     try {
-      const response = await fetch(`/api/v1/rutas/${rutaId}/paradas`, {
+      const response = await fetch(getApiUrl(`/api/v1/rutas/${rutaId}/paradas`), {
         method: "PUT",
         headers: { "Content-Type": "application/json", "X-API-Key": user.apiKey },
         body: JSON.stringify(updatePayload),

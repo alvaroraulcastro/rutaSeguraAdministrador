@@ -4,6 +4,7 @@ import { z } from 'zod';
 import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
 import { getCorsHeaders } from '@/lib/cors';
+import { registrarLog } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,10 +21,13 @@ export async function OPTIONS(request: Request) {
 export async function POST(request: Request) {
   const requestId = crypto.randomUUID();
   const corsHeaders = getCorsHeaders(request);
+  const ip = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip');
+  const userAgent = request.headers.get('user-agent');
+  let requestData: any = null;
 
   try {
-    const data = await request.json();
-    const { email, token, newPassword } = resetPasswordSchema.parse(data);
+    requestData = await request.json();
+    const { email, token, newPassword } = resetPasswordSchema.parse(requestData);
 
     const user = await prisma.usuario.findFirst({
       where: {
@@ -37,9 +41,19 @@ export async function POST(request: Request) {
 
     if (!user) {
       console.warn("[auth.reset-password.invalid_token]", { requestId, email });
-      return NextResponse.json({ 
-        error: 'Token inválido o expirado' 
-      }, { status: 400, headers: corsHeaders });
+      const response = { error: 'Token inválido o expirado' };
+      
+      await registrarLog({
+        metodo: 'POST',
+        endpoint: '/api/v1/auth/reset-password',
+        ip,
+        userAgent,
+        payload: requestData,
+        respuesta: response,
+        statusCode: 400
+      });
+
+      return NextResponse.json(response, { status: 400, headers: corsHeaders });
     }
 
     // Hashear la nueva contraseña
@@ -57,15 +71,42 @@ export async function POST(request: Request) {
 
     console.info("[auth.reset-password.success]", { requestId, userId: user.id });
 
-    return NextResponse.json({ 
-      message: 'Contraseña restablecida con éxito' 
-    }, { headers: corsHeaders });
+    const responseData = { message: 'Contraseña restablecida con éxito' };
+
+    await registrarLog({
+      metodo: 'POST',
+      endpoint: '/api/v1/auth/reset-password',
+      ip,
+      userAgent,
+      payload: requestData,
+      respuesta: responseData,
+      statusCode: 200,
+      usuarioId: user.id
+    });
+
+    return NextResponse.json(responseData, { headers: corsHeaders });
 
   } catch (error) {
+    let statusCode = 500;
+    let response: any = { error: 'Error interno del servidor' };
+
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: error.issues }, { status: 400, headers: corsHeaders });
+      statusCode = 400;
+      response = { error: error.issues };
+    } else {
+      console.error('[auth.reset-password.error]', { requestId, error });
     }
-    console.error('[auth.reset-password.error]', { requestId, error });
-    return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500, headers: corsHeaders });
+
+    await registrarLog({
+      metodo: 'POST',
+      endpoint: '/api/v1/auth/reset-password',
+      ip,
+      userAgent,
+      payload: requestData,
+      respuesta: response,
+      statusCode: statusCode
+    });
+
+    return NextResponse.json(response, { status: statusCode, headers: corsHeaders });
   }
 }

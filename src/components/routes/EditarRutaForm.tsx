@@ -6,6 +6,7 @@ import { Form, Input, Button, Select, Card, Typography, Spin, Alert, notificatio
 import { EnvironmentOutlined, CarOutlined } from "@ant-design/icons";
 
 import { useAuth } from "@/contexts/AuthContext";
+import { getApiUrl } from "@/lib/api";
 
 const { Title } = Typography;
 const { Option } = Select;
@@ -27,8 +28,8 @@ export default function EditarRutaForm({ id }: EditarRutaFormProps) {
       if (!user?.apiKey) return;
       try {
         const [rutaRes, transRes] = await Promise.all([
-          fetch(`/api/v1/rutas/${id}`, { headers: { "X-API-Key": user.apiKey } }),
-          fetch("/api/v1/transportistas", { headers: { "X-API-Key": user.apiKey } }),
+          fetch(getApiUrl(`/api/v1/rutas/${id}`), { headers: { "X-API-Key": user.apiKey } }),
+          fetch(getApiUrl("/api/v1/transportistas"), { headers: { "X-API-Key": user.apiKey } }),
         ]);
 
         if (!rutaRes.ok || !transRes.ok) throw new Error("Error al cargar datos");
@@ -54,7 +55,7 @@ export default function EditarRutaForm({ id }: EditarRutaFormProps) {
     if (!user?.apiKey) return;
     try {
       setSubmitting(true);
-      const response = await fetch(`/api/v1/rutas/${id}`, {
+      const response = await fetch(getApiUrl(`/api/v1/rutas/${id}`), {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

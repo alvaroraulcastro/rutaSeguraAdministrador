@@ -60,6 +60,8 @@ model LogPeticion {
   ip         String?
   userAgent  String?
   payload    String?  @db.Text
+  respuesta  String?  @db.Text
+  statusCode Int?
   usuarioId  String?
   usuario    Usuario? @relation(fields: [usuarioId], references: [id])
   fecha      DateTime @default(now())
