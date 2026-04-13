@@ -11,6 +11,8 @@ export type User = {
   email: string;
   nombre: string;
   rol: string;
+  telefono?: string;
+  foto?: string | null;
   apiKey: string; // La API Key real (no el hash) para usar en headers
 };
 

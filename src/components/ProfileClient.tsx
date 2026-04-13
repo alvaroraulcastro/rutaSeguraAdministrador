@@ -85,7 +85,7 @@ export default function ProfileClient() {
               onFinish={onUpdateProfile}
               initialValues={{
                 nombre: user.nombre,
-                telefono: (user as any).telefono || "",
+                telefono: user.telefono || "",
                 foto: user.foto || "",
               }}
             >
