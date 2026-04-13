@@ -3,16 +3,22 @@ import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 import { crearRutaSchema } from '@/lib/schemas/ruta';
 import { validarApiKey } from '@/lib/auth';
+import { getCorsHeaders } from '@/lib/cors';
 
 export const dynamic = 'force-dynamic';
 
+export async function OPTIONS(request: Request) {
+  return new NextResponse(null, { status: 204, headers: getCorsHeaders(request) });
+}
+
 export async function GET(request: Request) {
+  const corsHeaders = getCorsHeaders(request);
   try {
     const apiKey = request.headers.get('X-API-Key');
     const usuario = await validarApiKey(apiKey);
 
     if (!usuario) {
-      return NextResponse.json({ error: 'API Key inválida' }, { status: 401 });
+      return NextResponse.json({ error: 'API Key inválida' }, { status: 401, headers: corsHeaders });
     }
 
     const rutas = await prisma.ruta.findMany({
@@ -25,20 +31,21 @@ export async function GET(request: Request) {
         },
       },
     });
-    return NextResponse.json(rutas);
+    return NextResponse.json(rutas, { headers: corsHeaders });
   } catch (error) {
     console.error('Error fetching routes:', error);
-    return NextResponse.json({ error: 'Error al obtener las rutas' }, { status: 500 });
+    return NextResponse.json({ error: 'Error al obtener las rutas' }, { status: 500, headers: corsHeaders });
   }
 }
 
 export async function POST(request: Request) {
+  const corsHeaders = getCorsHeaders(request);
   try {
     const apiKey = request.headers.get('X-API-Key');
     const usuario = await validarApiKey(apiKey);
 
     if (!usuario) {
-      return NextResponse.json({ error: 'API Key inválida' }, { status: 401 });
+      return NextResponse.json({ error: 'API Key inválida' }, { status: 401, headers: corsHeaders });
     }
 
     const data = await request.json();
@@ -48,13 +55,13 @@ export async function POST(request: Request) {
       data: validatedData,
     });
 
-    return NextResponse.json(nuevaRuta, { status: 201 });
+    return NextResponse.json(nuevaRuta, { status: 201, headers: corsHeaders });
 
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: error.issues }, { status: 400 });
+      return NextResponse.json({ error: error.issues }, { status: 400, headers: corsHeaders });
     }
     console.error('Error creating route:', error);
-    return NextResponse.json({ error: 'Error al crear la ruta' }, { status: 500 });
+    return NextResponse.json({ error: 'Error al crear la ruta' }, { status: 500, headers: corsHeaders });
   }
 }
