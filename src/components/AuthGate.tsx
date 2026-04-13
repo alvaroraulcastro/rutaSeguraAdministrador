@@ -7,6 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import MainLayout from "@/components/MainLayout";
 
 const AUTH_PATHS = ["/login", "/register", "/forgot-password"];
+const ADMIN_ONLY_PATHS = ["/drivers", "/settings"];
 
 export default function AuthGate({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -19,9 +20,14 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
     if (isAuthPath) {
       if (user) router.replace("/");
     } else {
-      if (!user) router.replace("/login");
+      if (!user) {
+        router.replace("/login");
+      } else if (user.rol !== "ADMIN" && ADMIN_ONLY_PATHS.includes(pathname)) {
+        // Redirigir si un transportista intenta acceder a rutas de admin
+        router.replace("/");
+      }
     }
-  }, [user, isLoading, isAuthPath, router]);
+  }, [user, isLoading, isAuthPath, router, pathname]);
 
   if (isLoading) {
     return (

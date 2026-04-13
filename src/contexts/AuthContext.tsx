@@ -11,6 +11,8 @@ export type User = {
   email: string;
   nombre: string;
   rol: string;
+  telefono?: string;
+  foto?: string | null;
   apiKey: string; // La API Key real (no el hash) para usar en headers
 };
 
@@ -21,6 +23,8 @@ type AuthContextType = {
   register: (data: { nombre: string; email: string; password: string; telefono: string }) => Promise<{ ok: boolean; message?: string }>;
   logout: () => void;
   forgotPassword: (email: string) => Promise<{ ok: boolean; message?: string }>;
+  updateProfile: (data: { nombre?: string; telefono?: string; foto?: string | null }) => Promise<{ ok: boolean; message?: string }>;
+  changePassword: (currentPassword: string, newPassword: string) => Promise<{ ok: boolean; message?: string }>;
 };
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -179,6 +183,50 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  const updateProfile = useCallback(async (data: { nombre?: string; telefono?: string; foto?: string | null }) => {
+    if (!user?.apiKey) return { ok: false, message: "No autorizado" };
+    try {
+      const response = await fetch(getApiUrl("/api/v1/auth/profile"), {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          "X-API-Key": user.apiKey,
+        },
+        body: JSON.stringify(data),
+      });
+      const result = await response.json();
+      if (!response.ok) return { ok: false, message: result.error || "Error al actualizar perfil" };
+      
+      const updatedUser = { ...user, ...result.user };
+      setUser(updatedUser);
+      saveUser(updatedUser);
+      return { ok: true };
+    } catch (error) {
+      console.error("UpdateProfile context error:", error);
+      return { ok: false, message: "Error de conexión con el servidor" };
+    }
+  }, [user]);
+
+  const changePassword = useCallback(async (currentPassword: string, newPassword: string) => {
+    if (!user?.apiKey) return { ok: false, message: "No autorizado" };
+    try {
+      const response = await fetch(getApiUrl("/api/v1/auth/change-password"), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-API-Key": user.apiKey,
+        },
+        body: JSON.stringify({ currentPassword, newPassword }),
+      });
+      const result = await response.json();
+      if (!response.ok) return { ok: false, message: result.error || "Error al cambiar contraseña" };
+      return { ok: true, message: result.message };
+    } catch (error) {
+      console.error("ChangePassword context error:", error);
+      return { ok: false, message: "Error de conexión con el servidor" };
+    }
+  }, [user]);
+
   return (
     <AuthContext.Provider
       value={{
@@ -188,6 +236,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         register,
         logout,
         forgotPassword,
+        updateProfile,
+        changePassword,
       }}
     >
       {children}

@@ -3,16 +3,22 @@ import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 import { crearViajeSchema } from '@/lib/schemas/viaje';
 import { validarApiKey } from '@/lib/auth';
+import { getCorsHeaders } from '@/lib/cors';
 
 export const dynamic = 'force-dynamic';
 
+export async function OPTIONS(request: Request) {
+  return new NextResponse(null, { status: 204, headers: getCorsHeaders(request) });
+}
+
 export async function GET(request: Request) {
+  const corsHeaders = getCorsHeaders(request);
   try {
     const apiKey = request.headers.get('X-API-Key');
     const usuario = await validarApiKey(apiKey);
 
     if (!usuario) {
-      return NextResponse.json({ error: 'API Key inválida' }, { status: 401 });
+      return NextResponse.json({ error: 'API Key inválida' }, { status: 401, headers: corsHeaders });
     }
 
     const viajes = await prisma.viaje.findMany({
@@ -29,20 +35,21 @@ export async function GET(request: Request) {
         fecha: 'desc',
       },
     });
-    return NextResponse.json(viajes);
+    return NextResponse.json(viajes, { headers: corsHeaders });
   } catch (error) {
     console.error('Error fetching trips:', error);
-    return NextResponse.json({ error: 'Error al obtener los viajes' }, { status: 500 });
+    return NextResponse.json({ error: 'Error al obtener los viajes' }, { status: 500, headers: corsHeaders });
   }
 }
 
 export async function POST(request: Request) {
+  const corsHeaders = getCorsHeaders(request);
   try {
     const apiKey = request.headers.get('X-API-Key');
     const usuario = await validarApiKey(apiKey);
 
     if (!usuario) {
-      return NextResponse.json({ error: 'API Key inválida' }, { status: 401 });
+      return NextResponse.json({ error: 'API Key inválida' }, { status: 401, headers: corsHeaders });
     }
 
     const data = await request.json();
@@ -56,13 +63,13 @@ export async function POST(request: Request) {
       },
     });
 
-    return NextResponse.json(nuevoViaje, { status: 201 });
+    return NextResponse.json(nuevoViaje, { status: 201, headers: corsHeaders });
 
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: error.issues }, { status: 400 });
+      return NextResponse.json({ error: error.issues }, { status: 400, headers: corsHeaders });
     }
     console.error('Error creating trip:', error);
-    return NextResponse.json({ error: 'Error al crear el viaje' }, { status: 500 });
+    return NextResponse.json({ error: 'Error al crear el viaje' }, { status: 500, headers: corsHeaders });
   }
 }
