@@ -47,6 +47,30 @@ Obtiene los datos del usuario autenticado actualmente.
 - **Autenticación:** Requerida.
 - **Respuesta (200):** `{ "user": { ... } }`
 
+### Olvidé mi Contraseña
+Solicita un token de restablecimiento de contraseña.
+- **Endpoint:** `POST /api/v1/auth/forgot-password`
+- **Body (JSON):**
+  ```json
+  {
+    "email": "juan@example.com"
+  }
+  ```
+- **Respuesta (200):** `{ "message": "Si el correo está registrado..." }`
+
+### Restablecer Contraseña
+Cambia la contraseña usando el token recibido.
+- **Endpoint:** `POST /api/v1/auth/reset-password`
+- **Body (JSON):**
+  ```json
+  {
+    "email": "juan@example.com",
+    "token": "123456",
+    "newPassword": "nueva_password_123"
+  }
+  ```
+- **Respuesta (200):** `{ "message": "Contraseña restablecida con éxito" }`
+
 ---
 
 ## 🚍 Módulo: Transportistas

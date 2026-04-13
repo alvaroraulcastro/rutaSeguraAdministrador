@@ -24,6 +24,7 @@ import {
 } from "@ant-design/icons";
 
 import { useAuth } from "@/contexts/AuthContext";
+import { getApiUrl } from "@/lib/api";
 
 const { Title, Text } = Typography;
 
@@ -48,7 +49,7 @@ export default function PasajerosClient() {
       if (!user?.apiKey) return;
       try {
         setLoading(true);
-        const response = await fetch("/api/v1/pasajeros", {
+        const response = await fetch(getApiUrl("/api/v1/pasajeros"), {
           headers: { "X-API-Key": user.apiKey },
         });
         if (!response.ok) throw new Error("Error al obtener los pasajeros");
@@ -77,7 +78,7 @@ export default function PasajerosClient() {
       onOk: async () => {
         if (!user?.apiKey) return;
         try {
-          const response = await fetch(`/api/v1/pasajeros/${id}`, {
+          const response = await fetch(getApiUrl(`/api/v1/pasajeros/${id}`), {
             method: "DELETE",
             headers: { "X-API-Key": user.apiKey },
           });

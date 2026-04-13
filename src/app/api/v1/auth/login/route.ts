@@ -4,6 +4,8 @@ import { z } from 'zod';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import { getCorsHeaders } from '@/lib/cors';
+import { registrarLog } from '@/lib/logger';
+import { getApiUrl } from '@/lib/api';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -27,9 +29,13 @@ export async function OPTIONS(request: Request) {
 export async function POST(request: Request) {
   const requestId = crypto.randomUUID();
   const corsHeaders = getCorsHeaders(request);
+  const ip = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip');
+  const userAgent = request.headers.get('user-agent');
+  let requestData: any = null;
+
   try {
-    const data = await request.json();
-    const validatedData = loginSchema.parse(data);
+    requestData = await request.json();
+    const validatedData = loginSchema.parse(requestData);
 
     console.info("[auth.login.start]", {
       requestId,
@@ -46,7 +52,20 @@ export async function POST(request: Request) {
         requestId,
         email: maskEmail(validatedData.email),
       });
-      return NextResponse.json({ error: 'Credenciales inválidas' }, { status: 401, headers: corsHeaders });
+
+      const response = { error: 'Credenciales inválidas' };
+      await registrarLog({
+        metodo: 'POST',
+        endpoint: '/api/v1/auth/login',
+        ip,
+        userAgent,
+        payload: requestData,
+        respuesta: response,
+        statusCode: 401,
+        usuarioId: user?.id
+      });
+
+      return NextResponse.json(response, { status: 401, headers: corsHeaders });
     }
 
     // Al iniciar sesión, generamos una nueva API Key para el usuario.
@@ -67,17 +86,46 @@ export async function POST(request: Request) {
       email: maskEmail(updatedUser.email),
     });
 
-    return NextResponse.json({ 
+    const responseData = { 
       user: userWithoutSensitiveData, 
       apiKey: apiKey 
-    }, { headers: corsHeaders });
+    };
+
+    await registrarLog({
+      metodo: 'POST',
+      endpoint: '/api/v1/auth/login',
+      ip,
+      userAgent,
+      payload: requestData,
+      respuesta: responseData,
+      statusCode: 200,
+      usuarioId: updatedUser.id
+    });
+
+    return NextResponse.json(responseData, { headers: corsHeaders });
 
   } catch (error) {
+    let statusCode = 500;
+    let response: any = { error: 'Error interno del servidor' };
+
     if (error instanceof z.ZodError) {
+      statusCode = 400;
+      response = { error: error.issues };
       console.warn("[auth.login.validation_error]", { requestId });
-      return NextResponse.json({ error: error.issues }, { status: 400, headers: corsHeaders });
+    } else {
+      console.error('[auth.login.error]', { requestId, error });
     }
-    console.error('[auth.login.error]', { requestId, error });
-    return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500, headers: corsHeaders });
+
+    await registrarLog({
+      metodo: 'POST',
+      endpoint: '/api/v1/auth/login',
+      ip,
+      userAgent,
+      payload: requestData,
+      respuesta: response,
+      statusCode: statusCode
+    });
+
+    return NextResponse.json(response, { status: statusCode, headers: corsHeaders });
   }
 }

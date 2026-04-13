@@ -6,6 +6,7 @@ import { Form, Input, Button, Select, Card, Typography, Spin, Alert, notificatio
 import { EnvironmentOutlined, CarOutlined } from "@ant-design/icons";
 
 import { useAuth } from "@/contexts/AuthContext";
+import { getApiUrl } from "@/lib/api";
 
 const { Title } = Typography;
 const { Option } = Select;
@@ -28,7 +29,7 @@ export default function CrearRutaForm() {
     const fetchTransportistas = async () => {
       if (!user?.apiKey) return;
       try {
-        const response = await fetch("/api/v1/transportistas", {
+        const response = await fetch(getApiUrl("/api/v1/transportistas"), {
           headers: { "X-API-Key": user.apiKey },
         });
         if (!response.ok) throw new Error("No se pudieron cargar los transportistas");
@@ -51,7 +52,7 @@ export default function CrearRutaForm() {
     if (!user?.apiKey) return;
     setSubmitting(true);
     try {
-      const response = await fetch("/api/v1/rutas", {
+      const response = await fetch(getApiUrl("/api/v1/rutas"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

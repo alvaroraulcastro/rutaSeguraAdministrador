@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Form, Input, Button, Card, Typography, Space, Divider, notification, InputNumber, Row, Col, Spin, Alert } from "antd";
 import { UserOutlined, PhoneOutlined, HomeOutlined, AimOutlined, PlusOutlined, DeleteOutlined, TeamOutlined } from "@ant-design/icons";
 import { useAuth } from "@/contexts/AuthContext";
+import { getApiUrl } from "@/lib/api";
 
 const { Title } = Typography;
 
@@ -24,7 +25,7 @@ export default function EditarPasajeroForm({ id }: EditarPasajeroFormProps) {
     const fetchPasajero = async () => {
       if (!user?.apiKey) return;
       try {
-        const response = await fetch(`/api/v1/pasajeros/${id}`, {
+        const response = await fetch(getApiUrl(`/api/v1/pasajeros/${id}`), {
           headers: { "X-API-Key": user.apiKey },
         });
 
@@ -58,7 +59,7 @@ export default function EditarPasajeroForm({ id }: EditarPasajeroFormProps) {
     if (!user?.apiKey) return;
     setSubmitting(true);
     try {
-      const response = await fetch(`/api/v1/pasajeros/${id}`, {
+      const response = await fetch(getApiUrl(`/api/v1/pasajeros/${id}`), {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

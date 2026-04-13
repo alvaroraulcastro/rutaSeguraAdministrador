@@ -6,6 +6,7 @@ import { Form, Input, Button, Card, Typography, Space, Divider, notification, Ro
 import { UserOutlined, PhoneOutlined, HomeOutlined, AimOutlined, PlusOutlined, DeleteOutlined, TeamOutlined } from "@ant-design/icons";
 
 import { useAuth } from "@/contexts/AuthContext";
+import { getApiUrl } from "@/lib/api";
 
 const { Title } = Typography;
 
@@ -25,7 +26,7 @@ export default function CrearPasajeroForm() {
     }
     setSubmitting(true);
     try {
-      const response = await fetch("/api/v1/pasajeros", {
+      const response = await fetch(getApiUrl("/api/v1/pasajeros"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
