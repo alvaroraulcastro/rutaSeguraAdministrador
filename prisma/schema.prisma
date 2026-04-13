@@ -47,6 +47,7 @@ model Usuario {
 
   rutas     Ruta[]
   logs      LogPeticion[]
+  pasajeros Pasajero[] @relation("TransportistaPasajeros")
   resetToken       String?  @unique
   resetTokenExpiry DateTime?
   createdAt DateTime @default(now())
@@ -81,6 +82,8 @@ model Pasajero {
   direccionDestino       String
   latDestino             Float
   lngDestino             Float
+  transportistaId        String
+  transportista          Usuario                @relation("TransportistaPasajeros", fields: [transportistaId], references: [id])
   contactos              ContactoNotificacion[]
   paradas                Parada[]
   notificaciones         NotificacionLog[]

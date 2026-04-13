@@ -38,6 +38,7 @@ function getItem(
 
 const items: MenuItem[] = [
   getItem(<Link href="/">Dashboard</Link>, "/", <PieChartOutlined />),
+  getItem(<Link href="/profile">Mi Perfil</Link>, "/profile", <UserOutlined />),
   getItem(<Link href="/drivers">Transportistas</Link>, "/drivers", <CarOutlined />),
   getItem(<Link href="/passengers">Pasajeros</Link>, "/passengers", <TeamOutlined />),
   getItem(<Link href="/routes">Rutas</Link>, "/routes", <EnvironmentOutlined />),
@@ -58,6 +59,19 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   const {
     token: { colorBgContainer, borderRadiusLG },
   } = theme.useToken();
+
+  const isAdmin = user?.rol === "ADMIN";
+
+  // Filtrar items del menú según el rol
+  const filteredItems = items.filter(item => {
+    if (!item) return false;
+    const key = (item as any).key;
+    // Solo ADMIN puede ver Transportistas (/drivers) y Configuración (/settings)
+    if (!isAdmin && (key === "/drivers" || key === "/settings")) {
+      return false;
+    }
+    return true;
+  });
 
   // Obtener el nombre de la página actual para el breadcrumb
   const getPageName = () => {
@@ -90,7 +104,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
           theme="dark" 
           selectedKeys={[pathname]} 
           mode="inline" 
-          items={items} 
+          items={filteredItems} 
         />
       </Sider>
       <Layout>
