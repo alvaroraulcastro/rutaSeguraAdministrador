@@ -25,9 +25,7 @@ enum EstadoViaje {
 }
 
 enum CanalNotificacion {
-  PUSH
-  SMS
-  WHATSAPP
+  EMAIL
 }
 
 model Usuario {
@@ -46,6 +44,7 @@ model Usuario {
   apiKey    String?  @unique // Hash de la API Key
 
   rutas     Ruta[]
+  pasajerosCreados Pasajero[] @relation("PasajeroCreadoPor")
   logs      LogPeticion[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -77,6 +76,8 @@ model Pasajero {
   direccionDestino       String
   latDestino             Float
   lngDestino             Float
+  createdById            String?
+  createdBy              Usuario?               @relation("PasajeroCreadoPor", fields: [createdById], references: [id])
   contactos              ContactoNotificacion[]
   paradas                Parada[]
   notificaciones         NotificacionLog[]
@@ -87,9 +88,9 @@ model Pasajero {
 model ContactoNotificacion {
   id         String            @id @default(cuid())
   nombre     String
-  telefono   String
-  email      String?
-  canal      CanalNotificacion @default(PUSH)
+  telefono   String?
+  email      String
+  canal      CanalNotificacion @default(EMAIL)
   pasajeroId String
   pasajero   Pasajero          @relation(fields: [pasajeroId], references: [id], onDelete: Cascade)
   createdAt  DateTime          @default(now())

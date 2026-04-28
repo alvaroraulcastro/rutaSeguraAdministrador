@@ -5,10 +5,16 @@ import type { NextRequest } from 'next/server';
 const publicRoutes = [
   '/api/v1/auth/login',
   '/api/v1/auth/register',
+  '/api/v1/health',
 ];
 
 export function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
+
+  // Permitir preflight CORS sin exigir API Key
+  if (request.method === 'OPTIONS') {
+    return NextResponse.next();
+  }
 
   // Si la ruta es pública, permitir
   if (publicRoutes.includes(path)) {

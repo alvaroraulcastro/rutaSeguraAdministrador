@@ -12,7 +12,7 @@ export const rutaSchema = z.object({
 export const crearRutaSchema = z.object({
   nombre: z.string().min(3, 'El nombre debe tener al menos 3 caracteres'),
   tipo: z.enum(['IDA', 'VUELTA', 'IDA_Y_VUELTA']).optional(),
-  transportistaId: z.string().cuid('El ID del transportista no es válido'),
+  transportistaId: z.string().cuid('El ID del transportista no es válido').optional(),
 });
 
 export const actualizarRutaSchema = z.object({

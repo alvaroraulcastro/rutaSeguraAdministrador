@@ -3,24 +3,23 @@ import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
 import { z } from 'zod';
 import { actualizarViajeSchema } from '@/lib/schemas/viaje';
-import { validarApiKey } from '@/lib/auth';
+import { autenticarDesdeHeaders, esAdmin, usuarioPublicSelect } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await context.params;
-    const apiKey = request.headers.get('X-API-Key');
-    const usuario = await validarApiKey(apiKey);
+    const usuario = await autenticarDesdeHeaders(request.headers);
 
     if (!usuario) {
       return NextResponse.json({ error: 'API Key inválida' }, { status: 401 });
     }
 
-    const viaje = await prisma.viaje.findUnique({
-      where: { id },
+    const viaje = await prisma.viaje.findFirst({
+      where: esAdmin(usuario) ? { id } : { id, ruta: { transportistaId: usuario.id } },
       include: {
-        ruta: { include: { transportista: true, paradas: { include: { pasajero: true } } } },
+        ruta: { include: { transportista: { select: usuarioPublicSelect }, paradas: { include: { pasajero: true } } } },
         notificaciones: true,
       },
     });
@@ -40,11 +39,19 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
 export async function PUT(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await context.params;
-    const apiKey = request.headers.get('X-API-Key');
-    const usuario = await validarApiKey(apiKey);
+    const usuario = await autenticarDesdeHeaders(request.headers);
 
     if (!usuario) {
       return NextResponse.json({ error: 'API Key inválida' }, { status: 401 });
+    }
+
+    const viajeExistente = await prisma.viaje.findFirst({
+      where: esAdmin(usuario) ? { id } : { id, ruta: { transportistaId: usuario.id } },
+      select: { id: true },
+    });
+
+    if (!viajeExistente) {
+      return NextResponse.json({ error: 'Viaje no encontrado' }, { status: 404 });
     }
 
     const data = await request.json();
@@ -74,11 +81,19 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ id:
 export async function DELETE(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await context.params;
-    const apiKey = request.headers.get('X-API-Key');
-    const usuario = await validarApiKey(apiKey);
+    const usuario = await autenticarDesdeHeaders(request.headers);
 
     if (!usuario) {
       return NextResponse.json({ error: 'API Key inválida' }, { status: 401 });
+    }
+
+    const viajeExistente = await prisma.viaje.findFirst({
+      where: esAdmin(usuario) ? { id } : { id, ruta: { transportistaId: usuario.id } },
+      select: { id: true },
+    });
+
+    if (!viajeExistente) {
+      return NextResponse.json({ error: 'Viaje no encontrado' }, { status: 404 });
     }
 
     await prisma.viaje.delete({

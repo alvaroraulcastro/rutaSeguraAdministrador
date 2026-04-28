@@ -1,6 +1,7 @@
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import {
   Form,
   Input,
@@ -23,11 +24,29 @@ import {
   BellOutlined,
   ApiOutlined,
 } from "@ant-design/icons";
+import { useAuth } from "@/contexts/AuthContext";
 const { Title, Text } = Typography;
 const { Option } = Select;
 
 export default function SettingsPage() {
+  const { user } = useAuth();
+  const router = useRouter();
   const [form] = Form.useForm();
+
+  useEffect(() => {
+    if (user && user.rol !== "ADMIN") router.replace("/");
+  }, [router, user]);
+
+  if (user?.rol !== "ADMIN") {
+    return (
+      <Card>
+        <Title level={2} style={{ margin: 0 }}>
+          Configuración del sistema
+        </Title>
+        <Text type="secondary">Solo disponible para administradores.</Text>
+      </Card>
+    );
+  }
 
   const onFinish = (values: Record<string, unknown>) => {
     console.log("Settings updated:", values);
@@ -115,14 +134,6 @@ export default function SettingsPage() {
               </div>
               <Switch defaultChecked />
             </div>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <div>
-                <Text strong>WhatsApp como canal preferente</Text>
-                <br />
-                <Text type="secondary">Usar WhatsApp cuando esté disponible para el contacto.</Text>
-              </div>
-              <Switch />
-            </div>
           </Space>
           <Form onFinish={onFinish}>
             <Form.Item>
@@ -180,24 +191,21 @@ export default function SettingsPage() {
       children: (
         <>
           <Text type="secondary" style={{ display: "block", marginBottom: 16 }}>
-            Claves y configuraciones para servicios externos (maqueta).
+            Claves y configuraciones para servicios externos (maqueta). Notificaciones: solo Email.
           </Text>
           <Form layout="vertical">
             <Form.Item label="Google Maps API Key">
               <Input.Password placeholder="••••••••••••••••" disabled />
             </Form.Item>
-            <Form.Item label="Twilio (SMS / WhatsApp)">
+            <Form.Item label="Email (SMTP)">
               <Row gutter={8}>
                 <Col span={12}>
-                  <Input placeholder="Account SID" disabled />
+                  <Input placeholder="Host" disabled />
                 </Col>
                 <Col span={12}>
-                  <Input.Password placeholder="Auth Token" disabled />
+                  <Input placeholder="Usuario" disabled />
                 </Col>
               </Row>
-            </Form.Item>
-            <Form.Item label="Firebase (FCM - Push)">
-              <Input.Password placeholder="Server key o credenciales" disabled />
             </Form.Item>
             <Button type="primary" icon={<SaveOutlined />} disabled>
               Guardar (solo lectura en maqueta)

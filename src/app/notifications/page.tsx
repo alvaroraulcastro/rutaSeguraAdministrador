@@ -16,9 +16,7 @@ import {
   Input,
 } from "antd";
 import {
-  MessageOutlined,
-  WhatsAppOutlined,
-  BellOutlined,
+  MailOutlined,
   CheckCircleOutlined,
   UserOutlined,
 } from "@ant-design/icons";
@@ -37,18 +35,16 @@ type NotificationRecord = {
 };
 
 const MOCK_NOTIFICATIONS: NotificationRecord[] = [
-  { key: "1", id: "N-001", passenger: "Ana Gómez", type: "En camino (1 min)", channel: "WhatsApp", status: "Enviado", timestamp: "2026-03-17 08:32:15", destinatario: "Contacto 1" },
-  { key: "2", id: "N-002", passenger: "Luis Ramírez", type: "En puerta", channel: "SMS", status: "Enviado", timestamp: "2026-03-17 08:45:02", destinatario: "Tutor" },
-  { key: "3", id: "N-003", passenger: "Sofía Castro", type: "Llegada a destino", channel: "Push", status: "Procesando", timestamp: "2026-03-17 09:15:30", destinatario: "Contacto 1" },
-  { key: "4", id: "N-004", passenger: "Martín Fernández", type: "En camino (1 min)", channel: "WhatsApp", status: "Enviado", timestamp: "2026-03-17 09:22:10", destinatario: "Madre" },
-  { key: "5", id: "N-005", passenger: "Valentina Muñoz", type: "En puerta", channel: "WhatsApp", status: "Enviado", timestamp: "2026-03-17 09:35:00", destinatario: "Contacto 2" },
-  { key: "6", id: "N-006", passenger: "Ana Gómez", type: "Llegada a destino", channel: "SMS", status: "Fallido", timestamp: "2026-03-17 10:01:45", destinatario: "Tutor" },
+  { key: "1", id: "N-001", passenger: "Ana Gómez", type: "En camino (1 min)", channel: "Email", status: "Enviado", timestamp: "2026-03-17 08:32:15", destinatario: "contacto1@example.com" },
+  { key: "2", id: "N-002", passenger: "Luis Ramírez", type: "En puerta", channel: "Email", status: "Enviado", timestamp: "2026-03-17 08:45:02", destinatario: "tutor@example.com" },
+  { key: "3", id: "N-003", passenger: "Sofía Castro", type: "Llegada a destino", channel: "Email", status: "Procesando", timestamp: "2026-03-17 09:15:30", destinatario: "contacto1@example.com" },
+  { key: "4", id: "N-004", passenger: "Martín Fernández", type: "En camino (1 min)", channel: "Email", status: "Enviado", timestamp: "2026-03-17 09:22:10", destinatario: "madre@example.com" },
+  { key: "5", id: "N-005", passenger: "Valentina Muñoz", type: "En puerta", channel: "Email", status: "Enviado", timestamp: "2026-03-17 09:35:00", destinatario: "contacto2@example.com" },
+  { key: "6", id: "N-006", passenger: "Ana Gómez", type: "Llegada a destino", channel: "Email", status: "Fallido", timestamp: "2026-03-17 10:01:45", destinatario: "tutor@example.com" },
 ];
 
-const channelIcon = (channel: string) => {
-  if (channel === "WhatsApp") return <WhatsAppOutlined style={{ color: "#25D366" }} />;
-  if (channel === "SMS") return <MessageOutlined style={{ color: "#1677ff" }} />;
-  return <BellOutlined style={{ color: "#faad14" }} />;
+const channelIcon = () => {
+  return <MailOutlined style={{ color: "#1677ff" }} />;
 };
 
 const statusConfig: Record<string, "success" | "processing" | "error" | "default"> = {
@@ -94,7 +90,7 @@ export default function NotificationsPage() {
       key: "channel",
       render: (channel: string) => (
         <Space>
-          {channelIcon(channel)}
+          {channelIcon()}
           <Text>{channel}</Text>
         </Space>
       ),
@@ -126,9 +122,7 @@ export default function NotificationsPage() {
   });
 
   const byChannel = {
-    WhatsApp: MOCK_NOTIFICATIONS.filter((n) => n.channel === "WhatsApp").length,
-    SMS: MOCK_NOTIFICATIONS.filter((n) => n.channel === "SMS").length,
-    Push: MOCK_NOTIFICATIONS.filter((n) => n.channel === "Push").length,
+    Email: MOCK_NOTIFICATIONS.filter((n) => n.channel === "Email").length,
   };
   const enviados = MOCK_NOTIFICATIONS.filter((n) => n.status === "Enviado").length;
 
@@ -153,18 +147,18 @@ export default function NotificationsPage() {
         <Col xs={24} sm={8}>
           <Card>
             <Statistic
-              title="WhatsApp"
-              value={byChannel.WhatsApp}
-              prefix={<WhatsAppOutlined style={{ color: "#25D366" }} />}
+              title="Email"
+              value={byChannel.Email}
+              prefix={<MailOutlined style={{ color: "#1677ff" }} />}
             />
           </Card>
         </Col>
         <Col xs={24} sm={8}>
           <Card>
             <Statistic
-              title="SMS / Push"
-              value={byChannel.SMS + byChannel.Push}
-              prefix={<MessageOutlined />}
+              title="Entregas en cola"
+              value={MOCK_NOTIFICATIONS.filter((n) => n.status === "Procesando").length}
+              prefix={<MailOutlined />}
             />
           </Card>
         </Col>
@@ -189,9 +183,7 @@ export default function NotificationsPage() {
               value={channelFilter}
               onChange={setChannelFilter}
               options={[
-                { value: "WhatsApp", label: "WhatsApp" },
-                { value: "SMS", label: "SMS" },
-                { value: "Push", label: "Push" },
+                { value: "Email", label: "Email" },
               ]}
             />
             <Select

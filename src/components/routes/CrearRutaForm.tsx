@@ -27,6 +27,12 @@ export default function CrearRutaForm() {
   useEffect(() => {
     const fetchTransportistas = async () => {
       if (!user?.apiKey) return;
+      if (user.rol !== "ADMIN") {
+        setTransportistas([{ id: user.id, nombre: user.nombre }]);
+        form.setFieldsValue({ transportistaId: user.id });
+        setLoading(false);
+        return;
+      }
       try {
         const response = await fetch("/api/v1/transportistas", {
           headers: { "X-API-Key": user.apiKey },
@@ -45,9 +51,9 @@ export default function CrearRutaForm() {
       }
     };
     fetchTransportistas();
-  }, [user?.apiKey]);
+  }, [form, user]);
 
-  const onFinish = async (values: { nombre: string; transportistaId: string }) => {
+  const onFinish = async (values: { nombre: string; transportistaId?: string }) => {
     if (!user?.apiKey) return;
     setSubmitting(true);
     try {
@@ -57,7 +63,10 @@ export default function CrearRutaForm() {
           "Content-Type": "application/json",
           "X-API-Key": user.apiKey,
         },
-        body: JSON.stringify(values),
+        body: JSON.stringify({
+          ...values,
+          ...(user.rol !== "ADMIN" ? { transportistaId: user.id } : {}),
+        }),
       });
 
       if (!response.ok) {
@@ -104,19 +113,28 @@ export default function CrearRutaForm() {
         >
           <Input prefix={<EnvironmentOutlined />} placeholder="Ej: Ruta Mañana - Vitacura" />
         </Form.Item>
-        <Form.Item
-          name="transportistaId"
-          label="Transportista Asignado"
-          rules={[{ required: true, message: "Por favor, selecciona un transportista" }]}
-        >
-          <Select placeholder="Selecciona un transportista" loading={loading}>
-            {transportistas.map((t) => (
-              <Option key={t.id} value={t.id}>
-                <CarOutlined /> {t.nombre}
-              </Option>
-            ))}
-          </Select>
-        </Form.Item>
+        {user?.rol === "ADMIN" ? (
+          <Form.Item
+            name="transportistaId"
+            label="Transportista Asignado"
+            rules={[{ required: true, message: "Por favor, selecciona un transportista" }]}
+          >
+            <Select placeholder="Selecciona un transportista" loading={loading}>
+              {transportistas.map((t) => (
+                <Option key={t.id} value={t.id}>
+                  <CarOutlined /> {t.nombre}
+                </Option>
+              ))}
+            </Select>
+          </Form.Item>
+        ) : (
+          <>
+            <Form.Item name="transportistaId" initialValue={user?.id} hidden />
+            <Form.Item label="Transportista Asignado">
+              <Input prefix={<CarOutlined />} value={user?.nombre} disabled />
+            </Form.Item>
+          </>
+        )}
         <Form.Item>
           <Button type="primary" htmlType="submit" loading={submitting}>
             Crear Ruta

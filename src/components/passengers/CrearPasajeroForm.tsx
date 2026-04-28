@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Form, Input, Button, Card, Typography, Space, Divider, notification, Row, Col, InputNumber } from "antd";
-import { UserOutlined, PhoneOutlined, HomeOutlined, AimOutlined, PlusOutlined, DeleteOutlined, TeamOutlined } from "@ant-design/icons";
+import { UserOutlined, PhoneOutlined, HomeOutlined, AimOutlined, PlusOutlined, DeleteOutlined, TeamOutlined, MailOutlined } from "@ant-design/icons";
 
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -62,7 +62,7 @@ export default function CrearPasajeroForm() {
   return (
     <Card>
       <Title level={4}>Registrar Nuevo Pasajero</Title>
-      <Form form={form} layout="vertical" onFinish={onFinish} initialValues={{ contactos: [{ canal: 'PUSH' }] }}>
+      <Form form={form} layout="vertical" onFinish={onFinish} initialValues={{ contactos: [{ canal: "EMAIL" }] }}>
         
         <Divider titlePlacement="left"><UserOutlined /> Información Personal</Divider>
         <Row gutter={16}>
@@ -135,16 +135,23 @@ export default function CrearPasajeroForm() {
                   </Form.Item>
                   <Form.Item
                     {...restField}
-                    name={[name, 'telefono']}
-                    rules={[{ required: true, message: 'Falta teléfono' }]}
+                    name={[name, "email"]}
+                    rules={[{ required: true, message: "Falta email" }, { type: "email", message: "Email inválido" }]}
                   >
-                    <Input placeholder="Teléfono" />
+                    <Input prefix={<MailOutlined />} placeholder="email@dominio.com" />
                   </Form.Item>
                   <Form.Item
                     {...restField}
-                    name={[name, 'canal']}
+                    name={[name, "telefono"]}
                   >
-                    <Input disabled defaultValue="PUSH" />
+                    <Input prefix={<PhoneOutlined />} placeholder="Teléfono (opcional)" />
+                  </Form.Item>
+                  <Form.Item
+                    {...restField}
+                    name={[name, "canal"]}
+                    initialValue="EMAIL"
+                  >
+                    <Input disabled defaultValue="EMAIL" />
                   </Form.Item>
                   <DeleteOutlined onClick={() => remove(name)} />
                 </Space>

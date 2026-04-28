@@ -97,6 +97,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           console.log("[auth.login.client.error_payload]", {
             requestId,
             error: data?.error ?? null,
+            details: data?.details ?? null,
+            hint: data?.hint ?? null,
           });
         }
         return { ok: false, message: data.error || "Error al iniciar sesión" };

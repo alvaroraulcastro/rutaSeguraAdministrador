@@ -2,9 +2,9 @@ import { z } from 'zod';
 
 export const contactoNotificacionSchema = z.object({
   nombre: z.string().min(3),
-  telefono: z.string(),
-  email: z.string().email().optional(),
-  canal: z.enum(['PUSH', 'SMS', 'WHATSAPP']).default('PUSH'),
+  telefono: z.string().optional(),
+  email: z.string().email(),
+  canal: z.enum(['EMAIL']).default('EMAIL'),
 });
 
 export const crearPasajeroSchema = z.object({

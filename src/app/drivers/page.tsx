@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   Table,
   Button,
@@ -26,6 +27,7 @@ import {
   PhoneOutlined,
   MailOutlined,
 } from "@ant-design/icons";
+import { useAuth } from "@/contexts/AuthContext";
 const { Title, Text } = Typography;
 
 const MOCK_DRIVERS = [
@@ -87,8 +89,25 @@ const MOCK_DRIVERS = [
 ];
 
 export default function DriversPage() {
+  const { user } = useAuth();
+  const router = useRouter();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (user && user.rol !== "ADMIN") router.replace("/");
+  }, [router, user]);
+
+  if (user?.rol !== "ADMIN") {
+    return (
+      <Card>
+        <Title level={2} style={{ margin: 0 }}>
+          Transportistas
+        </Title>
+        <Text type="secondary">Solo disponible para administradores.</Text>
+      </Card>
+    );
+  }
 
   const columns = [
     {
@@ -124,7 +143,7 @@ export default function DriversPage() {
     {
       title: "Contacto",
       key: "contact",
-      render: (_: any, record: (typeof MOCK_DRIVERS)[0]) => (
+      render: (_: unknown, record: (typeof MOCK_DRIVERS)[0]) => (
         <Space direction="vertical" size={0}>
           <Space>
             <PhoneOutlined style={{ fontSize: 12 }} />

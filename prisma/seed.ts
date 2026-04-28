@@ -2,8 +2,9 @@ import "dotenv/config";
 import { PrismaClient, TipoRuta, EstadoViaje, CanalNotificacion, Rol } from '@prisma/client'
 import { PrismaPg } from '@prisma/adapter-pg'
 import pg from 'pg'
+import bcrypt from 'bcryptjs'
 
-const pool = new pg.Pool({ connectionString: process.env.POSTGRES_URL })
+const pool = new pg.Pool({ connectionString: process.env.POSTGRES_URL ?? process.env.DATABASE_URL })
 const adapter = new PrismaPg(pool)
 const prisma = new PrismaClient({ adapter })
 
@@ -21,21 +22,23 @@ async function main() {
   await prisma.usuario.deleteMany()
 
   // 2. Crear Usuarios (Transportistas y Admin)
+  const adminPasswordHash = await bcrypt.hash('admin123', 10)
   const admin = await prisma.usuario.create({
     data: {
       nombre: 'Admin Sistema',
       email: 'admin@rutasegura.com',
-      password: 'hashed_password_123', // En producción usar bcrypt/argon2
+      password: adminPasswordHash,
       rol: Rol.ADMIN,
       telefono: '+56900000000',
     },
   })
 
+  const driverPasswordHash = await bcrypt.hash('driver123', 10)
   const driver1 = await prisma.usuario.create({
     data: {
       nombre: 'Juan Pérez',
       email: 'juan.perez@example.com',
-      password: 'hashed_password_driver1',
+      password: driverPasswordHash,
       rol: Rol.TRANSPORTISTA,
       telefono: '+56912345678',
       patente: 'ABCD-12',
@@ -48,7 +51,7 @@ async function main() {
     data: {
       nombre: 'María González',
       email: 'maria.gonzalez@example.com',
-      password: 'hashed_password_driver2',
+      password: driverPasswordHash,
       rol: Rol.TRANSPORTISTA,
       telefono: '+56987654321',
       patente: 'FGHI-34',
@@ -73,8 +76,8 @@ async function main() {
         create: [
           {
             nombre: 'Papá de Andrés',
-            telefono: '+56911112222',
-            canal: CanalNotificacion.WHATSAPP,
+            email: 'papa.andres@example.com',
+            canal: CanalNotificacion.EMAIL,
           },
         ],
       },
@@ -96,8 +99,8 @@ async function main() {
         create: [
           {
             nombre: 'Mamá de Sofía',
-            telefono: '+56933334444',
-            canal: CanalNotificacion.PUSH,
+            email: 'mama.sofia@example.com',
+            canal: CanalNotificacion.EMAIL,
           },
         ],
       },

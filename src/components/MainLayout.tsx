@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
@@ -36,16 +36,6 @@ function getItem(
   } as MenuItem;
 }
 
-const items: MenuItem[] = [
-  getItem(<Link href="/">Dashboard</Link>, "/", <PieChartOutlined />),
-  getItem(<Link href="/drivers">Transportistas</Link>, "/drivers", <CarOutlined />),
-  getItem(<Link href="/passengers">Pasajeros</Link>, "/passengers", <TeamOutlined />),
-  getItem(<Link href="/routes">Rutas</Link>, "/routes", <EnvironmentOutlined />),
-  getItem(<Link href="/notifications">Notificaciones</Link>, "/notifications", <BellOutlined />),
-  getItem(<Link href="/reports">Reportes</Link>, "/reports", <FileOutlined />),
-  getItem(<Link href="/settings">Configuración</Link>, "/settings", <SettingOutlined />),
-];
-
 interface MainLayoutProps {
   children: React.ReactNode;
 }
@@ -59,13 +49,37 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
     token: { colorBgContainer, borderRadiusLG },
   } = theme.useToken();
 
+  const items: MenuItem[] = useMemo(() => {
+    const base = [
+      getItem(<Link href="/">Dashboard</Link>, "/", <PieChartOutlined />),
+      getItem(<Link href="/passengers">Pasajeros</Link>, "/passengers", <TeamOutlined />),
+      getItem(<Link href="/routes">Rutas</Link>, "/routes", <EnvironmentOutlined />),
+      getItem(<Link href="/notifications">Notificaciones</Link>, "/notifications", <BellOutlined />),
+      getItem(<Link href="/reports">Reportes</Link>, "/reports", <FileOutlined />),
+    ];
+
+    if (user?.rol === "ADMIN") {
+      return [
+        base[0],
+        getItem(<Link href="/drivers">Transportistas</Link>, "/drivers", <CarOutlined />),
+        ...base.slice(1),
+        getItem(<Link href="/settings">Configuración</Link>, "/settings", <SettingOutlined />),
+      ];
+    }
+
+    return base;
+  }, [user?.rol]);
+
   // Obtener el nombre de la página actual para el breadcrumb
   const getPageName = () => {
     const item = items.find((i) => i && "key" in i && i.key === pathname);
     if (!item || !("label" in item)) return "Dashboard";
-    // Extraer el texto del label que es un Link
-    const label = item.label as any;
-    return label?.props?.children || "Dashboard";
+    const labelNode = item.label as unknown;
+    if (React.isValidElement(labelNode)) {
+      const children = (labelNode.props as { children?: unknown }).children;
+      if (typeof children === "string") return children;
+    }
+    return "Dashboard";
   };
 
   return (
@@ -106,17 +120,17 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
           <Breadcrumb
             style={{ margin: "16px 0" }}
             items={[
-              { title: "Admin" },
+              { title: user?.rol === "ADMIN" ? "Administrador" : "Transportista" },
               { title: getPageName() },
             ]}
           />
           <Space size="large">
-            <Badge count={5}>
+            <Badge count={0}>
               <Button type="text" icon={<BellOutlined />} />
             </Badge>
             <Space>
               <Avatar icon={<UserOutlined />} />
-              <span>{user?.nombre ?? "Administrador"}</span>
+              <span>{user?.nombre ?? "Usuario"}</span>
             </Space>
             <Button
               type="text"
@@ -143,7 +157,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
           </div>
         </Content>
         <Footer style={{ textAlign: "center" }}>
-          RutaSegura ©{new Date().getFullYear()} - Panel de Administración de Transporte
+          RutaSegura ©{new Date().getFullYear()} - Panel {user?.rol === "ADMIN" ? "Administrador" : "Transportista"}
         </Footer>
       </Layout>
     </Layout>

@@ -1,5 +1,6 @@
 import { prisma } from './prisma';
 import bcrypt from 'bcryptjs';
+import type { Usuario } from '@prisma/client';
 
 /**
  * Valida una API Key contra la base de datos.
@@ -25,3 +26,27 @@ export async function validarApiKey(apiKey: string | null) {
 
   return null;
 }
+
+export async function autenticarDesdeHeaders(headers: Headers) {
+  const apiKey = headers.get('X-API-Key');
+  const usuario = await validarApiKey(apiKey);
+  return usuario;
+}
+
+export function esAdmin(usuario: Usuario) {
+  return usuario.rol === 'ADMIN';
+}
+
+export const usuarioPublicSelect = {
+  id: true,
+  nombre: true,
+  email: true,
+  rol: true,
+  telefono: true,
+  foto: true,
+  patente: true,
+  modelo: true,
+  capacidad: true,
+  createdAt: true,
+  updatedAt: true,
+} as const;

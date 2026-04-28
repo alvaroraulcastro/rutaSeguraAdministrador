@@ -2,20 +2,37 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 import { crearPasajeroSchema } from '@/lib/schemas/pasajero';
-import { validarApiKey } from '@/lib/auth';
+import { autenticarDesdeHeaders, esAdmin } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {
   try {
-    const apiKey = request.headers.get('X-API-Key');
-    const usuario = await validarApiKey(apiKey);
+    const usuario = await autenticarDesdeHeaders(request.headers);
 
     if (!usuario) {
       return NextResponse.json({ error: 'API Key inválida' }, { status: 401 });
     }
 
+    const where = esAdmin(usuario)
+      ? {}
+      : {
+          OR: [
+            { createdById: usuario.id },
+            {
+              paradas: {
+                some: {
+                  ruta: {
+                    transportistaId: usuario.id,
+                  },
+                },
+              },
+            },
+          ],
+        };
+
     const pasajeros = await prisma.pasajero.findMany({
+      where,
       include: {
         contactos: true,
       },
@@ -29,8 +46,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const apiKey = request.headers.get('X-API-Key');
-    const usuario = await validarApiKey(apiKey);
+    const usuario = await autenticarDesdeHeaders(request.headers);
 
     if (!usuario) {
       return NextResponse.json({ error: 'API Key inválida' }, { status: 401 });
@@ -42,9 +58,8 @@ export async function POST(request: Request) {
     const nuevoPasajero = await prisma.pasajero.create({
       data: {
         ...pasajeroData,
-        contactos: {
-          create: contactos,
-        },
+        ...(!esAdmin(usuario) ? { createdById: usuario.id } : {}),
+        ...(contactos ? { contactos: { create: contactos } } : {}),
       },
       include: {
         contactos: true,

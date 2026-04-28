@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
-import { validarApiKey } from '@/lib/auth';
+import { autenticarDesdeHeaders, esAdmin } from '@/lib/auth';
 
 export async function DELETE(
   request: NextRequest,
@@ -9,11 +9,20 @@ export async function DELETE(
 ) {
   try {
     const { id: rutaId, paradaId } = await context.params;
-    const apiKey = request.headers.get('X-API-Key');
-    const usuario = await validarApiKey(apiKey);
+    const usuario = await autenticarDesdeHeaders(request.headers);
 
     if (!usuario) {
       return NextResponse.json({ error: 'API Key inválida' }, { status: 401 });
+    }
+
+    if (!esAdmin(usuario)) {
+      const ruta = await prisma.ruta.findFirst({
+        where: { id: rutaId, transportistaId: usuario.id },
+        select: { id: true },
+      });
+      if (!ruta) {
+        return NextResponse.json({ error: 'Ruta no encontrada' }, { status: 404 });
+      }
     }
 
     await prisma.parada.delete({
@@ -35,4 +44,3 @@ export async function DELETE(
     return NextResponse.json({ error: 'Error al eliminar la parada' }, { status: 500 });
   }
 }
-
