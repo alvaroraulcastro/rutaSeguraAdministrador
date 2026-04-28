@@ -24,8 +24,10 @@ export function getApiKeyFromRequest(request: Request): string | null {
  * Usuario seguro para respuestas JSON (sin password ni hash de apiKey).
  */
 export function toUsuarioPublico(usuario: UsuarioConSecretos) {
-  const { password: _p, apiKey: _a, ...rest } = usuario;
-  return rest;
+  const rest = { ...usuario } as UsuarioConSecretos;
+  Reflect.deleteProperty(rest, 'password');
+  Reflect.deleteProperty(rest, 'apiKey');
+  return rest as Omit<UsuarioConSecretos, 'password' | 'apiKey'>;
 }
 
 /**
@@ -35,20 +37,44 @@ export function toUsuarioPublico(usuario: UsuarioConSecretos) {
 export async function validarApiKey(apiKey: string | null) {
   if (!apiKey) return null;
 
-  // Nota: Buscar todos y comparar es ineficiente. 
-  // En un sistema real con muchos usuarios, usaríamos un prefijo o un ID en la API Key
-  // para buscar directamente el registro.
-  const usuarios = await prisma.usuario.findMany({
-    where: {
-      apiKey: { not: null }
-    }
-  });
+  try {
+    // Extraer el prefijo del usuario ID de la API Key para búsqueda eficiente
+    const prefixMatch = apiKey.match(/^([a-z0-9]+)_/);
+    
+    if (prefixMatch) {
+      const userPrefix = prefixMatch[1];
+      
+      // Buscar usuarios cuyo ID comience con el prefijo
+      const usuarios = await prisma.usuario.findMany({
+        where: {
+          AND: [
+            { apiKey: { not: null } },
+            { id: { startsWith: userPrefix } }
+          ]
+        }
+      });
 
-  for (const usuario of usuarios) {
-    if (usuario.apiKey && await bcrypt.compare(apiKey, usuario.apiKey)) {
-      return usuario;
+      for (const usuario of usuarios) {
+        if (usuario.apiKey && await bcrypt.compare(apiKey, usuario.apiKey)) {
+          return usuario;
+        }
+      }
+    } else {
+      // Fallback: búsqueda en todos los usuarios (para API Keys antiguas)
+      const usuarios = await prisma.usuario.findMany({
+        where: { apiKey: { not: null } }
+      });
+
+      for (const usuario of usuarios) {
+        if (usuario.apiKey && await bcrypt.compare(apiKey, usuario.apiKey)) {
+          return usuario;
+        }
+      }
     }
+    
+    return null;
+  } catch (error) {
+    console.error('Error validating API key:', error);
+    return null;
   }
-
-  return null;
 }

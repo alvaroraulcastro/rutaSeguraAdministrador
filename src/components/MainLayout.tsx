@@ -53,7 +53,7 @@ interface MainLayoutProps {
 
 const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   const [collapsed, setCollapsed] = useState(false);
-  const pathname = usePathname();
+  const pathname = usePathname() ?? "/";
   const router = useRouter();
   const { user, logout } = useAuth();
   const {
@@ -65,7 +65,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   // Filtrar items del menú según el rol
   const filteredItems = items.filter(item => {
     if (!item) return false;
-    const key = (item as any).key;
+    const key = typeof item === "object" && item !== null && "key" in item ? item.key : null;
     // Solo ADMIN puede ver Transportistas (/drivers) y Configuración (/settings)
     if (!isAdmin && (key === "/drivers" || key === "/settings")) {
       return false;
@@ -77,9 +77,20 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   const getPageName = () => {
     const item = items.find((i) => i && "key" in i && i.key === pathname);
     if (!item || !("label" in item)) return "Dashboard";
-    // Extraer el texto del label que es un Link
-    const label = item.label as any;
-    return label?.props?.children || "Dashboard";
+    
+    // Mapeo seguro de nombres de página para evitar hydration errors
+    const pageNames: Record<string, string> = {
+      "/": "Dashboard",
+      "/profile": "Mi Perfil", 
+      "/drivers": "Transportistas",
+      "/passengers": "Pasajeros",
+      "/routes": "Rutas",
+      "/notifications": "Notificaciones",
+      "/reports": "Reportes",
+      "/settings": "Configuración"
+    };
+    
+    return pageNames[pathname] || "Dashboard";
   };
 
   return (

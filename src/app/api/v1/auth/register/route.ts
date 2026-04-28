@@ -4,6 +4,7 @@ import { z } from 'zod';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import { getCorsHeaders } from '@/lib/cors';
+import { toUsuarioPublico } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -60,11 +61,9 @@ export async function POST(request: Request) {
       },
     });
 
-    // No devolver el hash de la contraseña ni el de la API Key
-    const { password: _password, apiKey: _hashedApiKey, ...userWithoutSensitiveData } = newUser;
     console.info("[auth.register.success]", { requestId, userId: newUser.id, email: maskEmail(newUser.email) });
 
-    return NextResponse.json({ user: userWithoutSensitiveData, apiKey: apiKey }, { status: 201, headers: corsHeaders });
+    return NextResponse.json({ user: toUsuarioPublico(newUser), apiKey: apiKey }, { status: 201, headers: corsHeaders });
 
   } catch (error) {
     if (error instanceof z.ZodError) {

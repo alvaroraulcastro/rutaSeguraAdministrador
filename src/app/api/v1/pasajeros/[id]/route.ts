@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
 import { z } from 'zod';
 import { actualizarPasajeroSchema } from '@/lib/schemas/pasajero';
-import { validarApiKey } from '@/lib/auth';
+import { getApiKeyFromRequest, validarApiKey } from '@/lib/auth';
 import { getCorsHeaders } from '@/lib/cors';
 
 export const dynamic = 'force-dynamic';
@@ -16,7 +16,7 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
   const corsHeaders = getCorsHeaders(request);
   try {
     const { id } = await context.params;
-    const apiKey = request.headers.get('X-API-Key');
+    const apiKey = getApiKeyFromRequest(request);
     const usuario = await validarApiKey(apiKey);
 
     if (!usuario) {
@@ -47,7 +47,7 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ id:
   const corsHeaders = getCorsHeaders(request);
   try {
     const { id } = await context.params;
-    const apiKey = request.headers.get('X-API-Key');
+    const apiKey = getApiKeyFromRequest(request);
     const usuario = await validarApiKey(apiKey);
 
     if (!usuario) {
@@ -95,7 +95,7 @@ export async function DELETE(request: NextRequest, context: { params: Promise<{ 
   const corsHeaders = getCorsHeaders(request);
   try {
     const { id } = await context.params;
-    const apiKey = request.headers.get('X-API-Key');
+    const apiKey = getApiKeyFromRequest(request);
     const usuario = await validarApiKey(apiKey);
 
     if (!usuario) {
@@ -125,5 +125,44 @@ export async function DELETE(request: NextRequest, context: { params: Promise<{ 
     }
     console.error('Error deleting passenger:', error);
     return NextResponse.json({ error: 'Error al eliminar el pasajero' }, { status: 500, headers: corsHeaders });
+  }
+}
+
+export async function PATCH(request: NextRequest, context: { params: Promise<{ id: string }> }) {
+  const corsHeaders = getCorsHeaders(request);
+  try {
+    const { id } = await context.params;
+    const apiKey = getApiKeyFromRequest(request);
+    const usuario = await validarApiKey(apiKey);
+
+    if (!usuario) {
+      return NextResponse.json({ error: 'API Key inválida' }, { status: 401, headers: corsHeaders });
+    }
+
+    const body = await request.json();
+    const { activo } = z.object({ activo: z.boolean() }).parse(body);
+
+    const pasajeroExistente = await prisma.pasajero.findFirst({
+      where: { id, transportistaId: usuario.id },
+      select: { id: true },
+    });
+
+    if (!pasajeroExistente) {
+      return NextResponse.json({ error: 'Pasajero no encontrado' }, { status: 404, headers: corsHeaders });
+    }
+
+    const pasajeroActualizado = await prisma.pasajero.update({
+      where: { id },
+      data: { activo },
+      include: { contactos: true },
+    });
+
+    return NextResponse.json(pasajeroActualizado, { headers: corsHeaders });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ error: error.issues }, { status: 400, headers: corsHeaders });
+    }
+    console.error('Error patching passenger:', error);
+    return NextResponse.json({ error: 'Error al actualizar el estado del pasajero' }, { status: 500, headers: corsHeaders });
   }
 }

@@ -124,7 +124,7 @@ export default function DriversPage() {
     {
       title: "Contacto",
       key: "contact",
-      render: (_: any, record: (typeof MOCK_DRIVERS)[0]) => (
+      render: (_: unknown, record: (typeof MOCK_DRIVERS)[0]) => (
         <Space direction="vertical" size={0}>
           <Space>
             <PhoneOutlined style={{ fontSize: 12 }} />

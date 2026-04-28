@@ -11,7 +11,7 @@ import { getApiUrl } from "@/lib/api";
 const { Title } = Typography;
 
 export default function CrearPasajeroForm() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const [form] = Form.useForm();
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
@@ -35,6 +35,11 @@ export default function CrearPasajeroForm() {
         body: JSON.stringify(values),
       });
 
+      if (response.status === 401) {
+        logout();
+        router.replace("/login");
+        return;
+      }
       if (!response.ok) {
         const errorData = await response.json();
         const errorMessage = Array.isArray(errorData.error) 

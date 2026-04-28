@@ -183,11 +183,11 @@ export default function RutasClient() {
   ];
 
   if (loading) {
-    return <Spin size="large" tip="Cargando rutas..."><div style={{ height: 300 }} /></Spin>;
+    return <Spin size="large" description="Cargando rutas..."><div style={{ height: 300 }} /></Spin>;
   }
 
   if (error) {
-    return <Alert message="Error" description={error} type="error" showIcon />;
+    return <Alert title="Error" description={error} type="error" showIcon />;
   }
 
   return (

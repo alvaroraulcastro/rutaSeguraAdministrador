@@ -14,7 +14,7 @@ interface EditarPasajeroFormProps {
 }
 
 export default function EditarPasajeroForm({ id }: EditarPasajeroFormProps) {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const [form] = Form.useForm();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
@@ -29,6 +29,11 @@ export default function EditarPasajeroForm({ id }: EditarPasajeroFormProps) {
           headers: { "X-API-Key": user.apiKey },
         });
 
+        if (response.status === 401) {
+          logout();
+          router.replace("/login");
+          return;
+        }
         if (!response.ok) throw new Error("No se pudo cargar la información del pasajero");
 
         const data = await response.json();
@@ -53,7 +58,7 @@ export default function EditarPasajeroForm({ id }: EditarPasajeroFormProps) {
       }
     };
     fetchPasajero();
-  }, [id, form, user?.apiKey]);
+  }, [id, form, user?.apiKey, logout, router]);
 
   const onFinish = async (values: unknown) => {
     if (!user?.apiKey) return;
@@ -68,6 +73,11 @@ export default function EditarPasajeroForm({ id }: EditarPasajeroFormProps) {
         body: JSON.stringify(values),
       });
 
+      if (response.status === 401) {
+        logout();
+        router.replace("/login");
+        return;
+      }
       if (!response.ok) {
         const errorData = await response.json();
         const errorMessage = Array.isArray(errorData.error) 
@@ -93,8 +103,8 @@ export default function EditarPasajeroForm({ id }: EditarPasajeroFormProps) {
     }
   };
 
-  if (loading) return <Spin tip="Cargando pasajero..." />;
-  if (error) return <Alert message="Error" description={error} type="error" showIcon />;
+  if (loading) return <Spin description="Cargando pasajero..." />;
+  if (error) return <Alert title="Error" description={error} type="error" showIcon />;
 
   return (
     <Card>
