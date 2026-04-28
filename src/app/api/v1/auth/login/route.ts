@@ -5,7 +5,7 @@ import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import { getCorsHeaders } from '@/lib/cors';
 import { registrarLog } from '@/lib/logger';
-import { getApiUrl } from '@/lib/api';
+import { toUsuarioPublico } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -31,7 +31,7 @@ export async function POST(request: Request) {
   const corsHeaders = getCorsHeaders(request);
   const ip = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip');
   const userAgent = request.headers.get('user-agent');
-  let requestData: any = null;
+  let requestData: unknown = null;
 
   try {
     requestData = await request.json();
@@ -70,15 +70,16 @@ export async function POST(request: Request) {
 
     // Al iniciar sesión, generamos una nueva API Key para el usuario.
     // Esto actúa como un refresco de sesión en el esquema de "JWT por API Key".
-    const apiKey = crypto.randomBytes(32).toString('hex');
+    // Incluimos el ID del usuario como prefijo para búsquedas más eficientes
+    const apiKeyPrefix = user.id.substring(0, 8);
+    const randomPart = crypto.randomBytes(24).toString('hex');
+    const apiKey = `${apiKeyPrefix}_${randomPart}`;
     const hashedApiKey = await bcrypt.hash(apiKey, 10);
 
     const updatedUser = await prisma.usuario.update({
       where: { id: user.id },
       data: { apiKey: hashedApiKey },
     });
-
-    const { password: _password, apiKey: _hashedApiKey, ...userWithoutSensitiveData } = updatedUser;
     
     console.info("[auth.login.success]", {
       requestId,
@@ -87,7 +88,7 @@ export async function POST(request: Request) {
     });
 
     const responseData = { 
-      user: userWithoutSensitiveData, 
+      user: toUsuarioPublico(updatedUser), 
       apiKey: apiKey 
     };
 
@@ -106,7 +107,7 @@ export async function POST(request: Request) {
 
   } catch (error) {
     let statusCode = 500;
-    let response: any = { error: 'Error interno del servidor' };
+    let response: { error: string } | { error: z.ZodIssue[] } = { error: 'Error interno del servidor' };
 
     if (error instanceof z.ZodError) {
       statusCode = 400;

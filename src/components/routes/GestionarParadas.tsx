@@ -14,6 +14,7 @@ interface Pasajero {
   id: string;
   nombre: string;
   direccionDomicilio: string;
+  activo: boolean;
 }
 
 interface Parada {
@@ -49,7 +50,7 @@ export default function GestionarParadas({ rutaId }: GestionarParadasProps) {
       const pasajerosData = await pasajerosRes.json();
 
       setParadas(paradasData);
-      setPasajeros(pasajerosData);
+      setPasajeros((pasajerosData as Pasajero[]).filter((p) => p.activo !== false));
     } catch (err: unknown) {
       if (err instanceof Error) {
         notification.error({ message: "Error", description: err.message });
@@ -151,7 +152,7 @@ export default function GestionarParadas({ rutaId }: GestionarParadasProps) {
     },
   ];
 
-  if (loading) return <Spin size="large" tip="Cargando paradas..." />;
+  if (loading) return <Spin size="large" description="Cargando paradas..." />;
 
   return (
     <Card>

@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 import { crearPasajeroSchema } from '@/lib/schemas/pasajero';
-import { validarApiKey } from '@/lib/auth';
+import { getApiKeyFromRequest, validarApiKey } from '@/lib/auth';
 import { getCorsHeaders } from '@/lib/cors';
 
 export const dynamic = 'force-dynamic';
@@ -14,7 +14,7 @@ export async function OPTIONS(request: Request) {
 export async function GET(request: Request) {
   const corsHeaders = getCorsHeaders(request);
   try {
-    const apiKey = request.headers.get('X-API-Key');
+    const apiKey = getApiKeyFromRequest(request);
     const usuario = await validarApiKey(apiKey);
 
     if (!usuario) {
@@ -39,7 +39,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   const corsHeaders = getCorsHeaders(request);
   try {
-    const apiKey = request.headers.get('X-API-Key');
+    const apiKey = getApiKeyFromRequest(request);
     const usuario = await validarApiKey(apiKey);
 
     if (!usuario) {

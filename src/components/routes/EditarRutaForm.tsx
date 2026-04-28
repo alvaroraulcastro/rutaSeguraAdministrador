@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Form, Input, Button, Select, Card, Typography, Spin, Alert, notification } from "antd";
+import { Form, Input, Button, Select, Card, Typography, Spin, notification } from "antd";
 import { EnvironmentOutlined, CarOutlined } from "@ant-design/icons";
 
 import { useAuth } from "@/contexts/AuthContext";
@@ -15,13 +15,15 @@ interface EditarRutaFormProps {
   id: string;
 }
 
+type TransportistaOption = { id: string; nombre: string };
+
 export default function EditarRutaForm({ id }: EditarRutaFormProps) {
   const { user } = useAuth();
   const [form] = Form.useForm();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [transportistas, setTransportistas] = useState<any[]>([]);
+  const [transportistas, setTransportistas] = useState<TransportistaOption[]>([]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -42,8 +44,9 @@ export default function EditarRutaForm({ id }: EditarRutaFormProps) {
           ...rutaData,
           transportistaId: rutaData.transportistaId || undefined,
         });
-      } catch (err: any) {
-        notification.error({ message: "Error", description: err.message });
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : "Error al cargar datos";
+        notification.error({ message: "Error", description: message });
       } finally {
         setLoading(false);
       }
@@ -51,7 +54,7 @@ export default function EditarRutaForm({ id }: EditarRutaFormProps) {
     fetchData();
   }, [id, form, user?.apiKey]);
 
-  const onFinish = async (values: any) => {
+  const onFinish = async (values: { nombre: string; transportistaId: string }) => {
     if (!user?.apiKey) return;
     try {
       setSubmitting(true);
@@ -68,15 +71,16 @@ export default function EditarRutaForm({ id }: EditarRutaFormProps) {
 
       notification.success({ message: "Ruta actualizada correctamente" });
       router.push("/routes");
-    } catch (err: any) {
-      notification.error({ message: "Error", description: err.message });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Error al actualizar la ruta";
+      notification.error({ message: "Error", description: message });
     } finally {
       setSubmitting(false);
     }
   };
 
   if (loading) {
-    return <Spin tip="Cargando datos de la ruta..." />;
+    return <Spin description="Cargando datos de la ruta..." />;
   }
 
   return (

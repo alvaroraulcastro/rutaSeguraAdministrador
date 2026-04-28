@@ -73,6 +73,7 @@ model Pasajero {
   nombre                 String
   telefono               String
   foto                   String?
+  activo                 Boolean                @default(true)
   direccionDomicilio     String
   numeroDepto            String?
   latDomicilio           Float

@@ -14,7 +14,7 @@ export default function ProfileClient() {
   const [updatingProfile, setUpdatingProfile] = useState(false);
   const [changingPassword, setChangingPassword] = useState(false);
 
-  const onUpdateProfile = async (values: any) => {
+  const onUpdateProfile = async (values: { nombre: string; telefono?: string; foto?: string | null }) => {
     setUpdatingProfile(true);
     const result = await updateProfile(values);
     setUpdatingProfile(false);
@@ -32,7 +32,7 @@ export default function ProfileClient() {
     }
   };
 
-  const onChangePassword = async (values: any) => {
+  const onChangePassword = async (values: { currentPassword: string; newPassword: string; confirmPassword: string }) => {
     if (values.newPassword !== values.confirmPassword) {
       notification.error({
         message: "Error",

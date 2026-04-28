@@ -80,7 +80,7 @@ export async function POST(request: Request) {
 
   } catch (error) {
     let statusCode = 500;
-    let response: any = { error: 'Error interno del servidor' };
+    let response: { error: string } | { error: z.ZodIssue[] } = { error: 'Error interno del servidor' };
 
     if (error instanceof z.ZodError) {
       statusCode = 400;

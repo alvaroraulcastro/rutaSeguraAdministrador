@@ -87,11 +87,11 @@ export default function CrearRutaForm() {
   };
 
   if (loading) {
-    return <Spin tip="Cargando datos..." />;
+    return <Spin description="Cargando datos..." />;
   }
 
   if (error) {
-    return <Alert message="Error" description={error} type="error" showIcon />;
+    return <Alert title="Error" description={error} type="error" showIcon />;
   }
 
   return (

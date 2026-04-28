@@ -40,7 +40,7 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
           background: "#f0f2f5",
         }}
       >
-        <Spin size="large" tip="Cargando..." />
+        <Spin size="large" description="Cargando..." />
       </div>
     );
   }
