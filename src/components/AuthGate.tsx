@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo } from "react";
+import React, { useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Spin } from "antd";
 import { useAuth } from "@/contexts/AuthContext";
@@ -14,21 +14,24 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { user } = useAuth();
 
-  const pathname =
+  const rawPathname =
     pathnameFromHook ?? (typeof window !== "undefined" ? window.location.pathname : null);
+
+  const pathname =
+    typeof rawPathname === "string"
+      ? rawPathname.replace(/\/$/, "") || "/"
+      : null;
 
   const isAuthPath = typeof pathname === "string" ? AUTH_PATHS.includes(pathname) : false;
   const isAdminOnlyPath =
     typeof pathname === "string" ? ADMIN_ONLY_PATHS.includes(pathname) : false;
 
-  const redirectTo = useMemo(() => {
-    if (typeof pathname !== "string") return null;
-
-    if (isAuthPath) return user ? "/" : null;
-    if (!user) return "/login";
-    if (user.rol !== "ADMIN" && isAdminOnlyPath) return "/";
-    return null;
-  }, [pathname, isAuthPath, isAdminOnlyPath, user]);
+  let redirectTo: string | null = null;
+  if (typeof pathname === "string") {
+    if (isAuthPath) redirectTo = user ? "/" : null;
+    else if (!user) redirectTo = "/login";
+    else if (user.rol !== "ADMIN" && isAdminOnlyPath) redirectTo = "/";
+  }
 
   useEffect(() => {
     if (!redirectTo) return;
