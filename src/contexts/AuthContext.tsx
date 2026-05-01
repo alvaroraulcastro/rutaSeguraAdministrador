@@ -49,6 +49,9 @@ function parseUser(raw: string | null): User | null {
   }
 }
 
+let cachedUserRaw: string | null = null;
+let cachedUserSnapshot: User | null = null;
+
 function subscribeAuth(onStoreChange: () => void) {
   if (typeof window === "undefined") return () => {};
   const handler = () => onStoreChange();
@@ -62,7 +65,11 @@ function subscribeAuth(onStoreChange: () => void) {
 
 function getUserSnapshot() {
   if (typeof window === "undefined") return null;
-  return parseUser(localStorage.getItem(AUTH_STORAGE_KEY));
+  const raw = localStorage.getItem(AUTH_STORAGE_KEY);
+  if (raw === cachedUserRaw) return cachedUserSnapshot;
+  cachedUserRaw = raw;
+  cachedUserSnapshot = parseUser(raw);
+  return cachedUserSnapshot;
 }
 
 function getUserServerSnapshot() {
