@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useMemo } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Spin } from "antd";
 import { useAuth } from "@/contexts/AuthContext";
@@ -10,27 +10,32 @@ const AUTH_PATHS = ["/login", "/register", "/forgot-password"];
 const ADMIN_ONLY_PATHS = ["/drivers", "/settings"];
 
 export default function AuthGate({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname();
+  const pathnameFromHook = usePathname();
   const router = useRouter();
-  const { user, isLoading } = useAuth();
-  const hasPathname = typeof pathname === "string" && pathname.length > 0;
-  const isAuthPath = hasPathname ? AUTH_PATHS.includes(pathname) : false;
+  const { user } = useAuth();
+
+  const pathname =
+    pathnameFromHook ?? (typeof window !== "undefined" ? window.location.pathname : null);
+
+  const isAuthPath = typeof pathname === "string" ? AUTH_PATHS.includes(pathname) : false;
+  const isAdminOnlyPath =
+    typeof pathname === "string" ? ADMIN_ONLY_PATHS.includes(pathname) : false;
+
+  const redirectTo = useMemo(() => {
+    if (typeof pathname !== "string") return null;
+
+    if (isAuthPath) return user ? "/" : null;
+    if (!user) return "/login";
+    if (user.rol !== "ADMIN" && isAdminOnlyPath) return "/";
+    return null;
+  }, [pathname, isAuthPath, isAdminOnlyPath, user]);
 
   useEffect(() => {
-    if (isLoading || !hasPathname) return;
-    if (isAuthPath) {
-      if (user) router.replace("/");
-    } else {
-      if (!user) {
-        router.replace("/login");
-      } else if (user.rol !== "ADMIN" && ADMIN_ONLY_PATHS.includes(pathname)) {
-        // Redirigir si un transportista intenta acceder a rutas de admin
-        router.replace("/");
-      }
-    }
-  }, [user, isLoading, hasPathname, isAuthPath, router, pathname]);
+    if (!redirectTo) return;
+    router.replace(redirectTo);
+  }, [redirectTo, router]);
 
-  if (isLoading || !hasPathname) {
+  if (typeof pathname !== "string" || redirectTo) {
     return (
       <div
         style={{

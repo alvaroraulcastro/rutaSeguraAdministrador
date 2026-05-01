@@ -69,11 +69,6 @@ function getUserServerSnapshot() {
   return null;
 }
 
-function subscribeNoop(_onStoreChange: () => void) {
-  void _onStoreChange;
-  return () => {};
-}
-
 function shouldLogAuth() {
   if (typeof window === "undefined") return false;
   const localFlag = localStorage.getItem(AUTH_DEBUG_STORAGE_KEY) === "1";
@@ -92,7 +87,7 @@ function maskEmail(email: string) {
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const user = useSyncExternalStore(subscribeAuth, getUserSnapshot, getUserServerSnapshot);
-  const isLoading = !useSyncExternalStore(subscribeNoop, () => true, () => false);
+  const isLoading = false;
   const isProd = process.env.NODE_ENV === "production";
 
   const login = useCallback(async (email: string, password: string) => {
