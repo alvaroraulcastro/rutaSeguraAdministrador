@@ -13,10 +13,11 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { user, isLoading } = useAuth();
-  const isAuthPath = AUTH_PATHS.includes(pathname);
+  const hasPathname = typeof pathname === "string" && pathname.length > 0;
+  const isAuthPath = hasPathname ? AUTH_PATHS.includes(pathname) : false;
 
   useEffect(() => {
-    if (isLoading) return;
+    if (isLoading || !hasPathname) return;
     if (isAuthPath) {
       if (user) router.replace("/");
     } else {
@@ -27,9 +28,9 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
         router.replace("/");
       }
     }
-  }, [user, isLoading, isAuthPath, router, pathname]);
+  }, [user, isLoading, hasPathname, isAuthPath, router, pathname]);
 
-  if (isLoading) {
+  if (isLoading || !hasPathname) {
     return (
       <div
         style={{
