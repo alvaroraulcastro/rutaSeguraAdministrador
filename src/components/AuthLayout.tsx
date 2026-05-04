@@ -5,15 +5,13 @@ import { Card, Typography } from "antd";
 
 const { Title, Text } = Typography;
 
-export default function AuthLayout({
-  title,
-  subtitle,
-  children,
-}: {
+interface AuthLayoutProps {
   title: string;
   subtitle?: string;
   children: React.ReactNode;
-}) {
+}
+
+export default function AuthLayout({ title, subtitle, children }: AuthLayoutProps) {
   return (
     <div
       style={{
@@ -24,8 +22,10 @@ export default function AuthLayout({
         background: "linear-gradient(135deg, #1677ff 0%, #4096ff 50%, #69b1ff 100%)",
         padding: 24,
       }}
+      role="main"
+      aria-label="Autenticación"
     >
-      <div style={{ width: "100%", maxWidth: 420 }}>
+      <div style={{ width: "100%", maxWidth: 420 }} className="animate-slide-up">
         <div style={{ textAlign: "center", marginBottom: 24 }}>
           <div
             style={{
@@ -41,6 +41,7 @@ export default function AuthLayout({
               fontWeight: "bold",
               marginBottom: 16,
             }}
+            aria-hidden="true"
           >
             RS
           </div>

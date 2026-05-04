@@ -140,12 +140,15 @@ model Viaje {
 }
 
 model NotificacionLog {
-  id         String            @id @default(cuid())
-  mensaje    String
-  canal      CanalNotificacion
-  viajeId    String
-  viaje      Viaje             @relation(fields: [viajeId], references: [id])
-  pasajeroId String
-  pasajero   Pasajero          @relation(fields: [pasajeroId], references: [id])
-  enviadoEn  DateTime          @default(now())
+  id           String            @id @default(cuid())
+  mensaje      String
+  canal        CanalNotificacion
+  tipo         String            // EN_CAMINO, EN_PUERTA, LLEGADA_DESTINO, etc.
+  estado       String            @default("ENVIADO") // ENVIADO, PROCESANDO, FALLIDO
+  destinatario String?           // nombre del contacto que recibió la notificación
+  viajeId      String
+  viaje        Viaje             @relation(fields: [viajeId], references: [id])
+  pasajeroId   String
+  pasajero     Pasajero          @relation(fields: [pasajeroId], references: [id])
+  enviadoEn    DateTime          @default(now())
 }

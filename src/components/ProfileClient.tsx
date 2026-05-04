@@ -1,11 +1,24 @@
 "use client";
 
-import React, { useState } from "react";
-import { Form, Input, Button, Card, Typography, Space, Divider, notification, Row, Col, Avatar } from "antd";
-import { UserOutlined, PhoneOutlined, LockOutlined, SaveOutlined } from "@ant-design/icons";
+import React, { useState, useEffect } from "react";
+import { Form, Input, Button, Card, Typography, Space, Divider, notification, Row, Col, Avatar, Table, Tag, Badge, Skeleton, Alert } from "antd";
+import { UserOutlined, PhoneOutlined, LockOutlined, SaveOutlined, BellOutlined, EyeOutlined } from "@ant-design/icons";
+import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
+import { getApiUrl } from "@/lib/api";
+import EmptyState from "@/components/EmptyState";
 
 const { Title, Text } = Typography;
+
+interface NotificacionPerfil {
+  id: string;
+  mensaje: string;
+  tipo: string;
+  estado: string;
+  destinatario: string | null;
+  enviadoEn: string;
+  pasajero: { nombre: string };
+}
 
 export default function ProfileClient() {
   const { user, updateProfile, changePassword } = useAuth();
@@ -13,8 +26,11 @@ export default function ProfileClient() {
   const [passwordForm] = Form.useForm();
   const [updatingProfile, setUpdatingProfile] = useState(false);
   const [changingPassword, setChangingPassword] = useState(false);
+  const [notificaciones, setNotificaciones] = useState<NotificacionPerfil[]>([]);
+  const [loadingNotif, setLoadingNotif] = useState(true);
+  const [errorNotif, setErrorNotif] = useState<string | null>(null);
 
-  const onUpdateProfile = async (values: any) => {
+  const onUpdateProfile = async (values: { nombre?: string; telefono?: string; foto?: string | null }) => {
     setUpdatingProfile(true);
     const result = await updateProfile(values);
     setUpdatingProfile(false);
@@ -32,7 +48,7 @@ export default function ProfileClient() {
     }
   };
 
-  const onChangePassword = async (values: any) => {
+  const onChangePassword = async (values: { currentPassword: string; newPassword: string; confirmPassword: string }) => {
     if (values.newPassword !== values.confirmPassword) {
       notification.error({
         message: "Error",
@@ -59,7 +75,38 @@ export default function ProfileClient() {
     }
   };
 
+  // Fetch last 5 push notifications for TRANSPORTISTA
+  useEffect(() => {
+    const fetchNotificaciones = async () => {
+      if (!user?.apiKey || user.rol !== "TRANSPORTISTA") {
+        setLoadingNotif(false);
+        return;
+      }
+      try {
+        setLoadingNotif(true);
+        const res = await fetch(getApiUrl("/api/v1/notificaciones?limit=5"), {
+          headers: { "X-API-Key": user.apiKey },
+        });
+        if (!res.ok) throw new Error("Error al obtener notificaciones");
+        const data = await res.json();
+        setNotificaciones(data);
+      } catch (err: unknown) {
+        if (err instanceof Error) setErrorNotif(err.message);
+        else setErrorNotif("Ocurrió un error");
+      } finally {
+        setLoadingNotif(false);
+      }
+    };
+    fetchNotificaciones();
+  }, [user?.apiKey, user?.rol]);
+
   if (!user) return null;
+
+  const statusConfig: Record<string, "success" | "processing" | "error" | "default"> = {
+    ENVIADO: "success",
+    PROCESANDO: "processing",
+    FALLIDO: "error",
+  };
 
   return (
     <Space direction="vertical" size="large" style={{ width: "100%" }}>
@@ -169,6 +216,81 @@ export default function ProfileClient() {
           </Card>
         </Col>
       </Row>
+
+      {/* Sección de Notificaciones Push — solo para TRANSPORTISTA */}
+      {user.rol === "TRANSPORTISTA" && (
+        <Card
+          title={
+            <Space>
+              <BellOutlined />
+              Historial de Notificaciones Push
+            </Space>
+          }
+          style={{ marginTop: 8 }}
+          extra={
+            <Link href="/notifications">
+              <Button type="link" icon={<EyeOutlined />}>
+                Ver historial completo
+              </Button>
+            </Link>
+          }
+        >
+          {loadingNotif ? (
+            <Skeleton active title={false} paragraph={{ rows: 3 }} />
+          ) : errorNotif ? (
+            <Alert message="Error" description={errorNotif} type="error" showIcon />
+          ) : notificaciones.length === 0 ? (
+            <EmptyState
+              title="Sin notificaciones push"
+              description="Aún no tienes notificaciones push registradas para tus rutas."
+            />
+          ) : (
+            <Table
+              columns={[
+                {
+                  title: "Fecha",
+                  dataIndex: "enviadoEn",
+                  key: "enviadoEn",
+                  width: 160,
+                  render: (fecha: string) => (
+                    <Text>{new Date(fecha).toLocaleString("es-CL")}</Text>
+                  ),
+                },
+                {
+                  title: "Pasajero",
+                  dataIndex: "pasajero",
+                  key: "pasajero",
+                  render: (p: { nombre: string }) => <Text strong>{p.nombre}</Text>,
+                },
+                {
+                  title: "Tipo",
+                  dataIndex: "tipo",
+                  key: "tipo",
+                  render: (tipo: string) => <Tag color="blue">{tipo.replace(/_/g, " ")}</Tag>,
+                },
+                {
+                  title: "Mensaje",
+                  dataIndex: "mensaje",
+                  key: "mensaje",
+                  ellipsis: true,
+                },
+                {
+                  title: "Estado",
+                  dataIndex: "estado",
+                  key: "estado",
+                  render: (estado: string) => (
+                    <Badge status={statusConfig[estado] ?? "default"} text={estado} />
+                  ),
+                },
+              ]}
+              dataSource={notificaciones}
+              pagination={false}
+              rowKey="id"
+              size="small"
+            />
+          )}
+        </Card>
+      )}
     </Space>
   );
 }

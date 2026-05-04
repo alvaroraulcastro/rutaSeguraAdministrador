@@ -6,6 +6,7 @@ import { actualizarRutaSchema } from '@/lib/schemas/ruta';
 import { validarApiKey } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 export async function GET(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {

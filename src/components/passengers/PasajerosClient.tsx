@@ -11,10 +11,10 @@ import {
   Avatar,
   Input,
   Tooltip,
-  Spin,
   Alert,
   Modal,
   notification,
+  Skeleton,
 } from "antd";
 import {
   PlusOutlined,
@@ -25,6 +25,7 @@ import {
 
 import { useAuth } from "@/contexts/AuthContext";
 import { getApiUrl } from "@/lib/api";
+import EmptyState from "@/components/EmptyState";
 
 const { Title, Text } = Typography;
 
@@ -43,6 +44,7 @@ export default function PasajerosClient() {
   const [pasajeros, setPasajeros] = useState<Pasajero[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     const fetchPasajeros = async () => {
@@ -94,6 +96,16 @@ export default function PasajerosClient() {
     });
   };
 
+  const filteredPasajeros = pasajeros.filter((p) => {
+    if (!searchQuery) return true;
+    const q = searchQuery.toLowerCase();
+    return (
+      p.nombre.toLowerCase().includes(q) ||
+      p.direccionDomicilio.toLowerCase().includes(q) ||
+      p.telefono.toLowerCase().includes(q)
+    );
+  });
+
   const columns = [
     {
       title: "Pasajero",
@@ -127,27 +139,26 @@ export default function PasajerosClient() {
       ),
     },
     {
-      title: "Contactos de Notificación",
+      title: "Contactos",
       dataIndex: "contactos",
       key: "contactos",
       render: (contactos: { id: string; nombre: string; telefono: string }[]) => (
-        <Space>
-          <Text>{contactos?.length || 0}</Text>
-        </Space>
+        <Text>{contactos?.length || 0}</Text>
       ),
     },
     {
       title: "Acciones",
       key: "actions",
+      width: 120,
       render: (_: unknown, record: Pasajero) => (
         <Space>
           <Tooltip title="Editar Pasajero">
             <Link href={`/passengers/${record.id}/edit`}>
-              <Button icon={<EditOutlined />} />
+              <Button icon={<EditOutlined />} aria-label="Editar pasajero" />
             </Link>
           </Tooltip>
           <Tooltip title="Eliminar Pasajero">
-            <Button icon={<DeleteOutlined />} danger onClick={() => handleDelete(record.id)} />
+            <Button icon={<DeleteOutlined />} danger onClick={() => handleDelete(record.id)} aria-label="Eliminar pasajero" />
           </Tooltip>
         </Space>
       ),
@@ -155,30 +166,68 @@ export default function PasajerosClient() {
   ];
 
   if (loading) {
-    return <Spin size="large" tip="Cargando pasajeros..." />;
+    return (
+      <Card>
+        <Skeleton active title paragraph={{ rows: 1 }} />
+        <Skeleton active title={false} paragraph={{ rows: 5 }} />
+      </Card>
+    );
   }
 
   if (error) {
-    return <Alert message="Error" description={error} type="error" showIcon />;
+    return <Alert title="Error al cargar pasajeros" description={error} type="error" showIcon />;
   }
 
   return (
-    <Card>
-      <Title level={4}>Gestión de Pasajeros</Title>
-      <Text>Administra la información de los pasajeros y sus contactos.</Text>
-      <Space style={{ margin: "16px 0", width: "100%", justifyContent: "space-between" }}>
-        <Input.Search
-          placeholder="Buscar por nombre o dirección"
-          style={{ width: 300 }}
-          onSearch={(value) => console.log("Searching for:", value)}
-        />
+    <>
+      <div style={{ marginBottom: 24, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 16 }}>
+        <Title level={2} style={{ margin: 0 }}>
+          Pasajeros
+        </Title>
         <Link href="/passengers/new">
-          <Button type="primary" icon={<PlusOutlined />}>
+          <Button type="primary" icon={<PlusOutlined />} aria-label="Añadir pasajero">
             Añadir Pasajero
           </Button>
         </Link>
-      </Space>
-      <Table columns={columns} dataSource={pasajeros} rowKey="id" />
-    </Card>
+      </div>
+
+      <Card
+        title={`Total: ${pasajeros.length} pasajeros`}
+        extra={
+          <Input.Search
+            placeholder="Buscar por nombre, dirección o teléfono"
+            style={{ width: 300 }}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            allowClear
+            aria-label="Buscar pasajeros"
+          />
+        }
+      >
+        {filteredPasajeros.length === 0 ? (
+          <EmptyState
+            title="No hay pasajeros"
+            description={searchQuery ? "No se encontraron resultados para tu búsqueda." : "Aún no has registrado pasajeros en el sistema."}
+            action={
+              !searchQuery
+                ? {
+                    label: "Añadir Pasajero",
+                    onClick: () => window.location.assign("/passengers/new"),
+                    icon: <PlusOutlined />,
+                  }
+                : undefined
+            }
+          />
+        ) : (
+          <Table
+            columns={columns}
+            dataSource={filteredPasajeros}
+            rowKey="id"
+            pagination={{ pageSize: 10, showSizeChanger: true, showTotal: (t) => `Total: ${t}` }}
+            scroll={{ x: 700 }}
+          />
+        )}
+      </Card>
+    </>
   );
 }

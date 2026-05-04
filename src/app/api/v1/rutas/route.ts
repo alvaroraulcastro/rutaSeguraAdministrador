@@ -6,6 +6,7 @@ import { validarApiKey } from '@/lib/auth';
 import { getCorsHeaders } from '@/lib/cors';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 export async function OPTIONS(request: Request) {
   return new NextResponse(null, { status: 204, headers: getCorsHeaders(request) });
@@ -22,6 +23,7 @@ export async function GET(request: Request) {
     }
 
     const rutas = await prisma.ruta.findMany({
+      where: usuario.rol === 'ADMIN' ? undefined : { transportistaId: usuario.id },
       include: {
         transportista: true,
         paradas: {
