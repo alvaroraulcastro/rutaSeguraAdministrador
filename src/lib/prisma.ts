@@ -27,7 +27,7 @@ const prisma =
   (new Proxy({} as PrismaClient, {
     get(_target, prop) {
       const client = prismaClientSingleton();
-      return (client as any)[prop];
+      return Reflect.get(client, prop);
     },
   }) as PrismaClient);
 

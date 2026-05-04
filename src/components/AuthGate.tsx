@@ -1,42 +1,44 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { Spin, Typography } from "antd";
+import { Spin } from "antd";
 import { useAuth } from "@/contexts/AuthContext";
 import MainLayout from "@/components/MainLayout";
-
-const { Text } = Typography;
 
 const AUTH_PATHS = ["/login", "/register", "/forgot-password"];
 const ADMIN_ONLY_PATHS = ["/drivers", "/settings"];
 
 export default function AuthGate({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname();
+  const pathnameFromHook = usePathname();
   const router = useRouter();
-  const { user, isLoading } = useAuth();
-  const isAuthPath = AUTH_PATHS.includes(pathname);
-  const [minLoadDone, setMinLoadDone] = useState(false);
+  const { user } = useAuth();
+
+  const rawPathname =
+    pathnameFromHook ?? (typeof window !== "undefined" ? window.location.pathname : null);
+
+  const pathname =
+    typeof rawPathname === "string"
+      ? rawPathname.replace(/\/$/, "") || "/"
+      : null;
+
+  const isAuthPath = typeof pathname === "string" ? AUTH_PATHS.includes(pathname) : false;
+  const isAdminOnlyPath =
+    typeof pathname === "string" ? ADMIN_ONLY_PATHS.includes(pathname) : false;
+
+  let redirectTo: string | null = null;
+  if (typeof pathname === "string") {
+    if (isAuthPath) redirectTo = user ? "/" : null;
+    else if (!user) redirectTo = "/login";
+    else if (user.rol !== "ADMIN" && isAdminOnlyPath) redirectTo = "/";
+  }
 
   useEffect(() => {
-    const timer = setTimeout(() => setMinLoadDone(true), 300);
-    return () => clearTimeout(timer);
-  }, []);
+    if (!redirectTo) return;
+    router.replace(redirectTo);
+  }, [redirectTo, router]);
 
-  useEffect(() => {
-    if (isLoading || !minLoadDone) return;
-    if (isAuthPath) {
-      if (user) router.replace("/");
-    } else {
-      if (!user) {
-        router.replace("/login");
-      } else if (user.rol !== "ADMIN" && ADMIN_ONLY_PATHS.includes(pathname)) {
-        router.replace("/");
-      }
-    }
-  }, [user, isLoading, isAuthPath, router, pathname, minLoadDone]);
-
-  if (isLoading || !minLoadDone) {
+  if (typeof pathname !== "string" || redirectTo) {
     return (
       <div
         style={{
@@ -52,8 +54,7 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
         aria-label="Cargando aplicación"
         aria-busy="true"
       >
-        <Spin size="large" />
-        <Text type="secondary">Cargando...</Text>
+        <Spin size="large" description="Cargando..." />
       </div>
     );
   }

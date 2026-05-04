@@ -1,89 +1,137 @@
-# AGENTS.md — RutaSegura Admin
+# AGENTS.md — RutaSegura Admin (Web + API)
 
-High-signal context for OpenCode sessions working on this repository.
+Este repo contiene el **Panel Web Admin** y la **API HTTP** (REST) del sistema RutaSegura en un solo proyecto **Next.js App Router**.
 
-## Stack & Runtime
+## Stack
 
-- **Next.js 16+** App Router, **React 19**, TypeScript strict.
-- **UI:** Ant Design 6 + Tailwind CSS 4 (via `@tailwindcss/postcss`).
-- **ORM:** Prisma 7.5 with `@prisma/adapter-pg` (PostgreSQL via `pg` Pool).
-- **Validation:** Zod. **Auth:** Custom API-key scheme (bcrypt-hashed in DB, plain key returned to client).
-- **No test framework** is currently installed.
+- **Next.js:** 16.x (App Router)
+- **React:** 19.x
+- **UI:** Ant Design (antd) 6.x + Tailwind CSS v4
+- **DB:** PostgreSQL
+- **ORM:** Prisma 7.x (`@prisma/adapter-pg`)
+- **Validación:** Zod
+- **Auth:** API Key (hash en DB, clave plana solo en el cliente tras login)
+- **Mapas:** Leaflet (`react-leaflet`) donde aplique
 
-## Essential Commands
+## Quick Start (Local)
 
-| Command | What it does |
-|---------|--------------|
-| `npm install` | Install deps |
-| `npm run dev` | Start dev server on `localhost:3000` |
+### 1) Instalar dependencias
+
+```bash
+npm install
+```
+
+### 2) Variables de entorno
+
+Crea `.env.local` en la raíz (no commitear secretos).
+
+- `DATABASE_URL` o `POSTGRES_URL` (requerida): conexión PostgreSQL
+- `NEXT_PUBLIC_API_URL` (opcional): base URL si el front debe llamar otra API. Vacío o ausente → rutas relativas (`/api/...`) al mismo Next.js (recomendado en dev local)
+
+Ejemplo:
+
+```env
+POSTGRES_URL="postgresql://usuario:password@localhost:5432/rutasegura"
+NEXT_PUBLIC_API_URL=
+```
+
+### 3) Prisma
+
+```bash
+npx prisma generate
+npx prisma db push
+npx prisma db seed
+```
+
+- Schema: `prisma/schema.prisma`
+- `tsconfig.json` **excluye `prisma/`**; el seed usa su propio `PrismaClient`.
+
+### 4) Desarrollo
+
+```bash
+npm run dev
+```
+
+App: `http://localhost:3000`
+
+## Comandos útiles
+
+| Comando | Uso |
+|---|---|
+| `npm run dev` | Dev server |
 | `npm run build` | `prisma generate && next build --webpack` |
-| `npx next build --webpack` | Build for production using webpack (required because Prisma is incompatible with Turbopack build). |
-| `npm run lint` | `eslint` (ESLint 9, `eslint-config-next` core-web-vitals + TS) |
-| `npx prisma generate` | Regenerate Prisma client (done automatically by `build`) |
-| `npx prisma migrate dev` | Run migrations against `POSTGRES_URL`/`DATABASE_URL` |
-| `npx prisma db seed` | Run `prisma/seed.ts` (also configured in `prisma.config.ts`) |
+| `npm run start` | Servir build de producción |
+| `npm run lint` | ESLint |
+| `npx prisma studio` | GUI Prisma |
 
-> **Order matters:** After schema changes, run `prisma generate` (or `migrate dev`) before `npm run dev`/`build`, or the app will fail with missing/generated client types.
+> **Build:** Prisma con el adapter `pg` falla con el build por defecto de Next 16 (Turbopack). El script `build` usa **`next build --webpack`**. No quites `--webpack` de `package.json` o el build se romperá.
 
-## Prisma & Database
+> Tras cambios en `schema.prisma`, ejecuta `prisma generate` (o `npm run build`) antes de `dev` o TypeScript fallará.
 
-- **Config file:** `prisma.config.ts` (Prisma 7 format). It imports `dotenv/config` and reads `POSTGRES_URL` or `DATABASE_URL`.
-- **Schema:** `prisma/schema.prisma`. Models: `Usuario`, `Pasajero`, `Ruta`, `Parada`, `Viaje`, `NotificacionLog`, `ContactoNotificacion`, `LogPeticion`.
-- **Seed:** `prisma/seed.ts` creates an admin (`admin@rutasegura.com` / `admin123`) and sample transportistas/passengers/routes.
-- **Client singleton:** `src/lib/prisma.ts` uses a Proxy + global singleton so the `pg` adapter is not recreated on every HMR reload.
-- **Important:** `tsconfig.json` explicitly **excludes `prisma/`**. The seed uses its own `PrismaClient` instance directly.
+## Autenticación (API Key)
 
-## Auth & API Conventions
+1. `POST /api/v1/auth/login` devuelve `{ user, apiKey }`.
+2. En DB solo se guarda el **hash** de la API key (`Usuario.apiKey`).
+3. Requests protegidas: `X-API-Key` o `Authorization: Bearer <apiKey>`.
 
-- **Middleware:** `src/middleware.ts` guards `/api/v1/*`. It only checks that `X-API-Key` or `Authorization: Bearer <key>` **exists**; real validation happens inside API routes.
-- **API routes** generally export:
-  - `export const dynamic = 'force-dynamic'`
-  - `export const runtime = 'nodejs'`
-  - An `OPTIONS` handler that returns `getCorsHeaders(request)`
-- **Auth helpers:** `src/lib/auth.ts`
-  - `getApiKeyFromRequest(request)` — reads header.
-  - `validarApiKey(apiKey)` — bcrypt-compares against all `Usuario.apiKey` hashes (linear scan; acceptable for current scale).
-  - `toUsuarioPublico(usuario)` — strips `password` and `apiKey` before JSON response.
-- **Client auth:** `AuthContext` stores the full `User` object (including plain `apiKey`) in `localStorage` under `rutasegura_admin_user`. All authenticated fetch calls send `X-API-Key: user.apiKey`.
+Frontend: `localStorage` → `rutasegura_admin_user` (`src/contexts/AuthContext.tsx`). Rutas UI: `src/components/AuthGate.tsx`.
 
-## Project Structure
+## API (código)
+
+- Endpoints: `src/app/api/v1/**/route.ts`
+- Schemas Zod: `src/lib/schemas/*`
+- Auth: `src/lib/auth.ts` (`getApiKeyFromRequest`, `validarApiKey`)
+- Prisma: `src/lib/prisma.ts` (singleton + adapter `pg`)
+- CORS: `src/lib/cors.ts`
+- Logs: `LogPeticion` vía `registrarLog()` donde aplique; contraseñas enmascaradas
+
+### Convenciones de rutas API
+
+- `export const dynamic = 'force-dynamic'`
+- `export const runtime = 'nodejs'` en **todas** las rutas que usen Prisma (el adapter `pg` no corre en Edge)
+
+## Proxy (antes middleware)
+
+- `src/proxy.ts` comprueba que exista API Key / Bearer en `/api/v1/*`; la validación real es en cada route handler.
+- Next.js 16 puede avisar que la convención `middleware` está deprecada a favor de `proxy` (este repo ya usa `proxy.ts`).
+
+## Módulos principales
+
+- Auth: `/api/v1/auth/*`
+- Pasajeros: `/api/v1/pasajeros`
+- Rutas + paradas: `/api/v1/rutas`, `/api/v1/rutas/:id/paradas`
+- Viajes: `/api/v1/viajes`, ubicación, etc.
+- Transportistas: `/api/v1/transportistas`
+- Notificaciones: según rutas bajo `api/v1`
+
+## Mapas (Leaflet)
+
+- Componentes con mapa: Client Components; evitar SSR (`dynamic(..., { ssr: false })` si hace falta).
+- Importar `leaflet/dist/leaflet.css` donde corresponda.
+
+## Estructura (alta nivel)
 
 ```
-src/app/          # Next.js App Router pages + API routes
-src/app/api/v1/   # REST API entrypoints (auth, transportistas, pasajeros, rutas, viajes)
-src/components/   # React components (Ant Design based)
-src/contexts/     # AuthContext (client-side auth state)
-src/lib/          # prisma.ts, auth.ts, api.ts, cors.ts, logger.ts, schemas/
-src/data/         # Mock data files (e.g. mockPassengersWithAddresses.ts)
-prisma/           # schema.prisma, seed.ts
-public/           # Static assets
-docs/             # Markdown docs (plan, wireframes)
+src/app/          # páginas + API routes
+src/components/   # UI (pasajeros, rutas, layout, AuthGate)
+src/contexts/     # Auth
+src/lib/          # prisma, auth, api, cors, schemas, logger
+src/proxy.ts      # guardia mínima API /api/v1
+prisma/           # schema + seed
+docs/             # documentación (endpoints, estado proyecto)
 ```
 
-- Path alias: `@/*` → `./src/*`.
-- UI text and API messages are in **Spanish**.
+- Alias: `@/*` → `./src/*`
+- Textos UI y mensajes API en **español**
 
-## Environment Variables
+## Seguridad
 
-Required in `.env` (the repo currently has a committed `.env`):
+- No subir llaves ni `.env` con secretos reales.
+- `README.md` puede estar desactualizado; la fuente de verdad es el código en `src/`.
 
-- `DATABASE_URL` or `POSTGRES_URL` — PostgreSQL connection string.
-- `PRISMA_DATABASE_URL` — Also set in current env.
-- `API_RUTA_SEGURA_URL_BASE` / `NEXT_PUBLIC_API_URL` — Used by `src/lib/api.ts` for client-side fetch base URL.
+## Notas y gotchas
 
-## Style & Lint
-
-- ESLint 9 flat config (`eslint.config.mjs`) extends `eslint-config-next/core-web-vitals` + `typescript`.
-- Tailwind CSS 4 is used via PostCSS plugin (`@tailwindcss/postcss`).
-- `globals.css` is imported in `src/app/layout.tsx`.
-
-## Notes & Gotchas
-
-1. **No tests.** Any verification is manual (`npm run lint` + `npm run build` + runtime check).
-2. **API key validation is O(n)** over all users with non-null `apiKey`. Do not optimize prematurely, but be aware if scaling.
-3. **Prisma client regeneration** is required after any `schema.prisma` change before TypeScript will compile.
-4. **CORS** is handled manually in every API route via `getCorsHeaders`; the middleware does not add CORS.
-5. **Logging** of all requests goes to `LogPeticion` via `registrarLog()` in API routes; passwords are masked before storage.
-6. **Edge runtime limitation:** Prisma with `@prisma/adapter-pg` cannot run in Edge runtime; all API routes that touch the DB explicitly set `runtime = 'nodejs'`.
-7. **Seed script** deletes all existing data before inserting defaults (`deleteMany` cascade order matters).
-8. **Turbopack build limitation:** `next build` uses Turbopack by default in Next.js 16, but Prisma client fails with `Failed to load external module @prisma/client-<hash>`. The workaround is to force webpack via `--webpack` flag in the build script. **Never remove `--webpack` from `package.json` `build` script or builds will break.**
+1. No hay suite de tests; verificación manual: `lint` + `build` + prueba en runtime.
+2. `validarApiKey` compara contra todos los usuarios con `apiKey` no nula (O(n)); aceptable a escala actual.
+3. CORS se define por ruta con `getCorsHeaders`; el proxy no añade CORS.
+4. El seed borra datos previos antes de insertar (`deleteMany` en orden correcto).

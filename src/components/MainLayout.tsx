@@ -83,7 +83,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [notifCount, setNotifCount] = useState(0);
-  const pathname = usePathname();
+  const pathname = usePathname() ?? "/";
   const router = useRouter();
   const { user, logout } = useAuth();
   const {
@@ -116,7 +116,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
 
   const filteredItems = items.filter((item) => {
     if (!item) return false;
-    const key = (item as MenuItem)?.key;
+    const key = typeof item === "object" && item !== null && "key" in item ? item.key : null;
     if (!isAdmin && (key === "/drivers" || key === "/settings")) {
       return false;
     }

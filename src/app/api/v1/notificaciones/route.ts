@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { validarApiKey } from '@/lib/auth';
 import { getCorsHeaders } from '@/lib/cors';
@@ -27,7 +28,7 @@ export async function GET(request: Request) {
     const limit = searchParams.get('limit');
 
     // Base where: solo notificaciones PUSH (FCM)
-    const baseWhere: any = {
+    const baseWhere: Prisma.NotificacionLogWhereInput = {
       canal: 'PUSH',
     };
 

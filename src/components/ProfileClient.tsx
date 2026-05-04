@@ -30,7 +30,7 @@ export default function ProfileClient() {
   const [loadingNotif, setLoadingNotif] = useState(true);
   const [errorNotif, setErrorNotif] = useState<string | null>(null);
 
-  const onUpdateProfile = async (values: { nombre?: string; telefono?: string; foto?: string | null }) => {
+  const onUpdateProfile = async (values: { nombre: string; telefono?: string; foto?: string | null }) => {
     setUpdatingProfile(true);
     const result = await updateProfile(values);
     setUpdatingProfile(false);

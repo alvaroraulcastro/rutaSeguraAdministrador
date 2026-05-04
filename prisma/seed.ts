@@ -75,6 +75,7 @@ async function main() {
       direccionDestino: 'Av. Santa María 5800, Vitacura',
       latDestino: -33.3989,
       lngDestino: -70.5894,
+      transportistaId: driver1.id,
       contactos: {
         create: [
           {
@@ -98,6 +99,7 @@ async function main() {
       direccionDestino: 'Av. Colón 4567, Las Condes',
       latDestino: -33.4123,
       lngDestino: -70.5789,
+      transportistaId: driver1.id,
       contactos: {
         create: [
           {

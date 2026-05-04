@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Table,
   Button,
@@ -14,7 +15,7 @@ import {
   Alert,
   Modal,
   notification,
-  Skeleton,
+  Spin,
 } from "antd";
 import {
   PlusOutlined,
@@ -33,6 +34,7 @@ interface Pasajero {
   id: string;
   nombre: string;
   telefono: string;
+  activo: boolean;
   direccionDomicilio: string;
   nombreDestino: string;
   direccionDestino: string;
@@ -40,7 +42,8 @@ interface Pasajero {
 }
 
 export default function PasajerosClient() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
+  const router = useRouter();
   const [pasajeros, setPasajeros] = useState<Pasajero[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -48,15 +51,25 @@ export default function PasajerosClient() {
 
   useEffect(() => {
     const fetchPasajeros = async () => {
-      if (!user?.apiKey) return;
+      if (!user?.apiKey) {
+        setLoading(false);
+        setError("No autenticado");
+        return;
+      }
       try {
         setLoading(true);
         const response = await fetch(getApiUrl("/api/v1/pasajeros"), {
           headers: { "X-API-Key": user.apiKey },
         });
+        if (response.status === 401) {
+          logout();
+          router.replace("/login");
+          return;
+        }
         if (!response.ok) throw new Error("Error al obtener los pasajeros");
         const data = await response.json();
         setPasajeros(data);
+        setError(null);
       } catch (err: unknown) {
         if (err instanceof Error) {
           setError(err.message);
@@ -68,7 +81,7 @@ export default function PasajerosClient() {
       }
     };
     fetchPasajeros();
-  }, [user?.apiKey]);
+  }, [user?.apiKey, logout, router]);
 
   const handleDelete = (id: string) => {
     Modal.confirm({
@@ -84,6 +97,11 @@ export default function PasajerosClient() {
             method: "DELETE",
             headers: { "X-API-Key": user.apiKey },
           });
+          if (response.status === 401) {
+            logout();
+            router.replace("/login");
+            return;
+          }
           if (!response.ok) throw new Error("Error al eliminar el pasajero");
           setPasajeros((prev) => prev.filter((p) => p.id !== id));
           notification.success({ message: "Pasajero eliminado exitosamente" });
@@ -105,6 +123,45 @@ export default function PasajerosClient() {
       p.telefono.toLowerCase().includes(q)
     );
   });
+
+  const handleToggleActivo = (record: Pasajero) => {
+    const nextActivo = !record.activo;
+    Modal.confirm({
+      title: nextActivo ? "¿Reactivar pasajero?" : "¿Desactivar pasajero?",
+      content: nextActivo
+        ? "El pasajero volverá a estar disponible."
+        : "El pasajero quedará inactivo, pero no se eliminará.",
+      okText: nextActivo ? "Reactivar" : "Desactivar",
+      okType: nextActivo ? "primary" : "danger",
+      cancelText: "Cancelar",
+      onOk: async () => {
+        if (!user?.apiKey) return;
+        try {
+          const response = await fetch(getApiUrl(`/api/v1/pasajeros/${record.id}`), {
+            method: "PATCH",
+            headers: {
+              "Content-Type": "application/json",
+              "X-API-Key": user.apiKey,
+            },
+            body: JSON.stringify({ activo: nextActivo }),
+          });
+          if (response.status === 401) {
+            logout();
+            router.replace("/login");
+            return;
+          }
+          if (!response.ok) throw new Error("Error al actualizar el estado del pasajero");
+          const updated = (await response.json()) as Pasajero;
+          setPasajeros((prev) => prev.map((p) => (p.id === record.id ? { ...p, activo: updated.activo } : p)));
+          notification.success({ message: nextActivo ? "Pasajero reactivado" : "Pasajero desactivado" });
+        } catch (err: unknown) {
+          if (err instanceof Error) {
+            notification.error({ message: "Error", description: err.message });
+          }
+        }
+      },
+    });
+  };
 
   const columns = [
     {
@@ -147,6 +204,14 @@ export default function PasajerosClient() {
       ),
     },
     {
+      title: "Estado",
+      dataIndex: "activo",
+      key: "activo",
+      render: (activo: boolean) => (
+        <Text type={activo ? "success" : "danger"}>{activo ? "Activo" : "Inactivo"}</Text>
+      ),
+    },
+    {
       title: "Acciones",
       key: "actions",
       width: 120,
@@ -157,6 +222,11 @@ export default function PasajerosClient() {
               <Button icon={<EditOutlined />} aria-label="Editar pasajero" />
             </Link>
           </Tooltip>
+          <Tooltip title={record.activo ? "Desactivar" : "Reactivar"}>
+            <Button danger={record.activo} onClick={() => handleToggleActivo(record)}>
+              {record.activo ? "Desactivar" : "Reactivar"}
+            </Button>
+          </Tooltip>
           <Tooltip title="Eliminar Pasajero">
             <Button icon={<DeleteOutlined />} danger onClick={() => handleDelete(record.id)} aria-label="Eliminar pasajero" />
           </Tooltip>
@@ -166,12 +236,7 @@ export default function PasajerosClient() {
   ];
 
   if (loading) {
-    return (
-      <Card>
-        <Skeleton active title paragraph={{ rows: 1 }} />
-        <Skeleton active title={false} paragraph={{ rows: 5 }} />
-      </Card>
-    );
+    return <Spin size="large" description="Cargando pasajeros..." />;
   }
 
   if (error) {

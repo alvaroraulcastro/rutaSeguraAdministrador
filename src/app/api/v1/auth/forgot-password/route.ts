@@ -20,7 +20,7 @@ export async function POST(request: Request) {
   const corsHeaders = getCorsHeaders(request);
   const ip = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip');
   const userAgent = request.headers.get('user-agent');
-  let requestData: any = null;
+  let requestData: unknown = null;
 
   try {
     requestData = await request.json();
@@ -93,7 +93,7 @@ export async function POST(request: Request) {
 
   } catch (error) {
     let statusCode = 500;
-    let response: any = { error: 'Error interno del servidor' };
+    let response: { error: string } | { error: z.ZodIssue[] } = { error: 'Error interno del servidor' };
 
     if (error instanceof z.ZodError) {
       statusCode = 400;

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, useCallback } from "react";
+import React, { createContext, useContext, useCallback, useSyncExternalStore } from "react";
 import { getApiUrl } from "@/lib/api";
 
 const AUTH_STORAGE_KEY = "rutasegura_admin_user";
@@ -35,6 +35,47 @@ function saveUser(user: User | null) {
   else localStorage.removeItem(AUTH_STORAGE_KEY);
 }
 
+function notifyAuthChanged() {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new Event("rutasegura:auth"));
+}
+
+function parseUser(raw: string | null): User | null {
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as User;
+  } catch {
+    return null;
+  }
+}
+
+let cachedUserRaw: string | null = null;
+let cachedUserSnapshot: User | null = null;
+
+function subscribeAuth(onStoreChange: () => void) {
+  if (typeof window === "undefined") return () => {};
+  const handler = () => onStoreChange();
+  window.addEventListener("storage", handler);
+  window.addEventListener("rutasegura:auth", handler);
+  return () => {
+    window.removeEventListener("storage", handler);
+    window.removeEventListener("rutasegura:auth", handler);
+  };
+}
+
+function getUserSnapshot() {
+  if (typeof window === "undefined") return null;
+  const raw = localStorage.getItem(AUTH_STORAGE_KEY);
+  if (raw === cachedUserRaw) return cachedUserSnapshot;
+  cachedUserRaw = raw;
+  cachedUserSnapshot = parseUser(raw);
+  return cachedUserSnapshot;
+}
+
+function getUserServerSnapshot() {
+  return null;
+}
+
 function shouldLogAuth() {
   if (typeof window === "undefined") return false;
   const localFlag = localStorage.getItem(AUTH_DEBUG_STORAGE_KEY) === "1";
@@ -52,20 +93,8 @@ function maskEmail(email: string) {
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(() => {
-    if (typeof window !== "undefined") {
-      const raw = localStorage.getItem(AUTH_STORAGE_KEY);
-      if (raw) {
-        try {
-          return JSON.parse(raw) as User;
-        } catch (e) {
-          console.error("Error parsing user from localStorage", e);
-        }
-      }
-    }
-    return null;
-  });
-  const [isLoading] = useState(false);
+  const user = useSyncExternalStore(subscribeAuth, getUserSnapshot, getUserServerSnapshot);
+  const isLoading = false;
   const isProd = process.env.NODE_ENV === "production";
 
   const login = useCallback(async (email: string, password: string) => {
@@ -112,8 +141,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         apiKey: data.apiKey,
       };
 
-      setUser(u);
       saveUser(u);
+      notifyAuthChanged();
       if (!isProd || shouldLogAuth()) {
         console.log("[auth.login.client.success]", { requestId, userId: u.id });
       }
@@ -149,8 +178,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           apiKey: result.apiKey,
         };
 
-        setUser(u);
         saveUser(u);
+        notifyAuthChanged();
         if (!isProd) console.debug("[auth.register.client.success]", { userId: u.id });
         return { ok: true };
       } catch (error) {
@@ -162,8 +191,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 
   const logout = useCallback(() => {
-    setUser(null);
     saveUser(null);
+    notifyAuthChanged();
   }, []);
 
   const forgotPassword = useCallback(async (email: string) => {
@@ -198,8 +227,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!response.ok) return { ok: false, message: result.error || "Error al actualizar perfil" };
       
       const updatedUser = { ...user, ...result.user };
-      setUser(updatedUser);
       saveUser(updatedUser);
+      notifyAuthChanged();
       return { ok: true };
     } catch (error) {
       console.error("UpdateProfile context error:", error);

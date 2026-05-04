@@ -17,6 +17,11 @@ enum TipoRuta {
   IDA_Y_VUELTA
 }
 
+enum TipoInicioRuta {
+  DOMICILIO_TRANSPORTISTA
+  VEHICULO
+}
+
 enum EstadoViaje {
   PENDIENTE
   EN_CURSO
@@ -73,6 +78,7 @@ model Pasajero {
   nombre                 String
   telefono               String
   foto                   String?
+  activo                 Boolean                @default(true)
   direccionDomicilio     String
   numeroDepto            String?
   latDomicilio           Float
@@ -107,6 +113,11 @@ model Ruta {
   id              String   @id @default(cuid())
   nombre          String
   tipo            TipoRuta @default(IDA)
+  inicioTipo      TipoInicioRuta? @default(VEHICULO)
+  inicioDireccion String?
+  inicioComuna    String?
+  latInicio       Float?
+  lngInicio       Float?
   transportistaId String
   transportista   Usuario  @relation(fields: [transportistaId], references: [id])
   paradas         Parada[]

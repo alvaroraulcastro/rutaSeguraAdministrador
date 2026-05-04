@@ -5,8 +5,8 @@ interface LogData {
   endpoint: string;
   ip?: string | null;
   userAgent?: string | null;
-  payload?: any;
-  respuesta?: any;
+  payload?: unknown;
+  respuesta?: unknown;
   statusCode?: number;
   usuarioId?: string | null;
 }
@@ -14,12 +14,15 @@ interface LogData {
 export async function registrarLog(data: LogData) {
   try {
     // Sanitizar payload para no guardar contraseñas en texto plano
-    const payloadSanitizado = data.payload ? { ...data.payload } : null;
-    if (payloadSanitizado && payloadSanitizado.password) {
-      payloadSanitizado.password = '********';
-    }
-    if (payloadSanitizado && payloadSanitizado.newPassword) {
-      payloadSanitizado.newPassword = '********';
+    const payloadSanitizado: unknown =
+      data.payload && typeof data.payload === 'object' && data.payload !== null
+        ? { ...(data.payload as Record<string, unknown>) }
+        : data.payload ?? null;
+
+    if (payloadSanitizado && typeof payloadSanitizado === 'object') {
+      const p = payloadSanitizado as Record<string, unknown>;
+      if ('password' in p) p.password = '********';
+      if ('newPassword' in p) p.newPassword = '********';
     }
 
     await prisma.logPeticion.create({
@@ -28,8 +31,8 @@ export async function registrarLog(data: LogData) {
         endpoint: data.endpoint,
         ip: data.ip,
         userAgent: data.userAgent,
-        payload: payloadSanitizado ? JSON.stringify(payloadSanitizado) : null,
-        respuesta: data.respuesta ? JSON.stringify(data.respuesta) : null,
+        payload: payloadSanitizado !== null ? JSON.stringify(payloadSanitizado) : null,
+        respuesta: data.respuesta !== undefined ? JSON.stringify(data.respuesta) : null,
         statusCode: data.statusCode,
         usuarioId: data.usuarioId,
       },
