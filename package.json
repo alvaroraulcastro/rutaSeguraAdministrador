@@ -5,6 +5,8 @@
   "scripts": {
     "dev": "next dev",
     "build": "prisma generate && next build --webpack",
+    "vercel-build": "prisma generate && prisma db push && next build --webpack",
+    "db:push": "prisma db push",
     "start": "next start",
     "lint": "eslint"
   },
@@ -27,7 +29,21 @@
     "zod": "^4.6.7"
   },
   "overrides": {
-    "picomatch": "^4.0.7"
+    "picomatch": "4.0.7",
+    "tinyglobby": {
+      "picomatch": "4.0.7",
+      "fdir": {
+        "picomatch": "4.0.7"
+      }
+    },
+    "micromatch": {
+      "picomatch": "4.0.7"
+    },
+    "fast-glob": {
+      "micromatch": {
+        "picomatch": "4.0.7"
+      }
+    }
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.5",

@@ -44,6 +44,7 @@ App: `http://localhost:3000` — seed admin: `admin@rutasegura.com` / `admin123`
 |---------|-----|
 | `npm run dev` | Servidor de desarrollo |
 | `npm run build` | `prisma generate && next build --webpack` |
+| `npm run vercel-build` | `prisma generate && prisma db push && next build --webpack` (Vercel) |
 | `npm run start` | Producción |
 | `npm run lint` | ESLint |
 | `npx prisma studio` | GUI DB |

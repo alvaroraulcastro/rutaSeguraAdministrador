@@ -78,6 +78,8 @@ npx prisma db push
 npx prisma db seed
 ```
 
+En **Vercel**, el script `vercel-build` ejecuta `prisma db push` antes del build para alinear el schema de producción. Si el deploy falla en ese paso, puedes aplicar manualmente `prisma/sql/sync_schema_operativo.sql` en PostgreSQL.
+
 El seed crea datos de ejemplo y **borra tablas relacionadas** antes de insertar. Credenciales de prueba:
 
 | Rol | Email | Contraseña |
