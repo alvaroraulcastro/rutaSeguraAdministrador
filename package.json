@@ -5,6 +5,8 @@
   "scripts": {
     "dev": "next dev",
     "build": "prisma generate && next build --webpack",
+    "vercel-build": "prisma generate && prisma db push && next build --webpack",
+    "db:push": "prisma db push",
     "start": "next start",
     "lint": "eslint"
   },

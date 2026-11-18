@@ -22,10 +22,11 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'API Key inválida' }, { status: 401, headers: corsHeaders });
     }
 
+    const where =
+      usuario.rol === 'ADMIN' ? {} : { transportistaId: usuario.id };
+
     const pasajeros = await prisma.pasajero.findMany({
-      where: {
-        transportistaId: usuario.id,
-      },
+      where,
       include: {
         contactos: true,
       },
