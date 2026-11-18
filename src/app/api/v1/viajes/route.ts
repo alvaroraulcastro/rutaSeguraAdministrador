@@ -6,6 +6,7 @@ import { validarApiKey } from '@/lib/auth';
 import { getCorsHeaders } from '@/lib/cors';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 export async function OPTIONS(request: Request) {
   return new NextResponse(null, { status: 204, headers: getCorsHeaders(request) });
@@ -21,12 +22,16 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'API Key inválida' }, { status: 401, headers: corsHeaders });
     }
 
+    const filtroRuta =
+      usuario.rol === 'TRANSPORTISTA' ? { transportistaId: usuario.id } : {};
+
     const viajes = await prisma.viaje.findMany({
+      where: { ruta: filtroRuta },
       include: {
         ruta: {
           include: {
             transportista: true,
-            paradas: { include: { pasajero: true } },
+            paradas: { include: { pasajero: true }, orderBy: { orden: 'asc' } },
           },
         },
         notificaciones: true,

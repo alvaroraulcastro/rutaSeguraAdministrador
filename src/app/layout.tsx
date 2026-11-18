@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { AntdRegistry } from "@ant-design/nextjs-registry";
+import AppProviders from "@/components/AppProviders";
 import { AuthProvider } from "@/contexts/AuthContext";
 import AuthGate from "@/components/AuthGate";
 import "./globals.css";
@@ -21,7 +21,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 5,
-  themeColor: "#ffffff",
+  themeColor: "#1565e8",
 };
 
 export const metadata: Metadata = {
@@ -87,11 +87,11 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable}`}
     >
       <body className="antialiased">
-        <AntdRegistry>
+        <AppProviders>
           <AuthProvider>
             <AuthGate>{children}</AuthGate>
           </AuthProvider>
-        </AntdRegistry>
+        </AppProviders>
       </body>
     </html>
   );

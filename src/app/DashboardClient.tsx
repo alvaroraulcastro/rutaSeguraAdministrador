@@ -1,130 +1,148 @@
 "use client";
 
-import React from "react";
-import { Card, Col, Row, Statistic, Table, Tag, Typography } from "antd";
+import React, { useEffect, useState } from "react";
+import { Card, Col, Row, Table, Tag, Alert } from "antd";
+import PageHeader from "@/components/PageHeader";
+import StatCard from "@/components/StatCard";
+import PageLoading from "@/components/PageLoading";
 import {
   CarOutlined,
   TeamOutlined,
   EnvironmentOutlined,
   BellOutlined,
-  ArrowUpOutlined,
 } from "@ant-design/icons";
-const { Title } = Typography;
+import { useAuth } from "@/contexts/AuthContext";
+import { getApiUrl } from "@/lib/api";
+
+interface ResumenDashboard {
+  pasajerosTotal: number;
+  rutasTotal: number;
+  viajesActivos: number;
+  notificacionesHoy: number;
+  cumplimiento: number | null;
+  viajesEnTabla: {
+    id: string;
+    transportista: string;
+    ruta: string;
+    estado: string;
+    ultimaParada: string;
+    ultimaUbicacionEn: string | null;
+  }[];
+}
 
 const columns = [
   {
     title: "ID",
     dataIndex: "id",
     key: "id",
+    ellipsis: true,
+    width: 120,
+    render: (id: string) => id.slice(0, 8) + "…",
   },
   {
     title: "Transportista",
-    dataIndex: "driver",
-    key: "driver",
+    dataIndex: "transportista",
+    key: "transportista",
   },
   {
     title: "Ruta",
-    dataIndex: "route",
-    key: "route",
+    dataIndex: "ruta",
+    key: "ruta",
   },
   {
     title: "Estado",
-    key: "status",
-    dataIndex: "status",
+    key: "estado",
+    dataIndex: "estado",
     render: (status: string) => (
-      <Tag color={status === "En curso" ? "blue" : "green"}>{status}</Tag>
+      <Tag color={status === "En curso" ? "blue" : status === "Completada" ? "green" : "default"}>
+        {status}
+      </Tag>
     ),
   },
   {
-    title: "Última parada",
-    dataIndex: "lastStop",
-    key: "lastStop",
-  },
-];
-
-const data = [
-  {
-    key: "1",
-    id: "R-101",
-    driver: "Juan Pérez",
-    route: "Ruta Mañana - Providencia",
-    status: "En curso",
-    lastStop: "Colegio Saint George",
-  },
-  {
-    key: "2",
-    id: "R-102",
-    driver: "María López",
-    route: "Ruta Mañana - Las Condes",
-    status: "Completada",
-    lastStop: "Edificio Costanera",
-  },
-  {
-    key: "3",
-    id: "R-103",
-    driver: "Pedro Sánchez",
-    route: "Ruta Tarde - Vitacura",
-    status: "En curso",
-    lastStop: "Av. Kennedy 123",
+    title: "Parada actual",
+    dataIndex: "ultimaParada",
+    key: "ultimaParada",
   },
 ];
 
 export default function DashboardClient() {
+  const { user } = useAuth();
+  const [data, setData] = useState<ResumenDashboard | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchResumen = async () => {
+      if (!user?.apiKey) return;
+      try {
+        setLoading(true);
+        const res = await fetch(getApiUrl("/api/v1/dashboard/resumen"), {
+          headers: { "X-API-Key": user.apiKey },
+        });
+        if (!res.ok) throw new Error("No se pudo cargar el resumen");
+        setData(await res.json());
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Error desconocido");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchResumen();
+  }, [user?.apiKey]);
+
+  if (loading) {
+    return <PageLoading label="Cargando resumen operativo..." />;
+  }
+
+  if (error || !data) {
+    return <Alert type="error" message={error ?? "Sin datos"} showIcon />;
+  }
+
   return (
     <>
-      <Title level={2} style={{ marginBottom: 24 }}>
-        Dashboard
-      </Title>
-      
+      <PageHeader
+        title="Dashboard"
+        description="Indicadores del día y estado de los viajes en curso."
+      />
+
       <Row gutter={[16, 16]}>
         <Col xs={24} sm={12} lg={6}>
-          <Card variant="borderless">
-            <Statistic
-              title="Rutas Activas"
-              value={12}
-              prefix={<CarOutlined />}
-              styles={{ content: { color: "#3f8600" } }}
-            />
-          </Card>
+          <StatCard
+            title="Viajes en curso"
+            value={data.viajesActivos}
+            icon={<CarOutlined />}
+            accent="#1565e8"
+          />
         </Col>
         <Col xs={24} sm={12} lg={6}>
-          <Card variant="borderless">
-            <Statistic
-              title="Pasajeros Totales"
-              value={156}
-              prefix={<TeamOutlined />}
-            />
-          </Card>
+          <StatCard title="Pasajeros" value={data.pasajerosTotal} icon={<TeamOutlined />} />
         </Col>
         <Col xs={24} sm={12} lg={6}>
-          <Card variant="borderless">
-            <Statistic
-              title="Notificaciones Hoy"
-              value={842}
-              prefix={<BellOutlined />}
-              suffix={<ArrowUpOutlined />}
-              styles={{ content: { color: "#1677ff" } }}
-            />
-          </Card>
+          <StatCard title="Notificaciones hoy" value={data.notificacionesHoy} icon={<BellOutlined />} />
         </Col>
         <Col xs={24} sm={12} lg={6}>
-          <Card variant="borderless">
-            <Statistic
-              title="Cumplimiento"
-              value={98.5}
-              precision={1}
-              prefix={<EnvironmentOutlined />}
-              suffix="%"
-              styles={{ content: { color: "#3f8600" } }}
-            />
-          </Card>
+          <StatCard
+            title="Cumplimiento hoy"
+            value={data.cumplimiento ?? 0}
+            precision={1}
+            suffix="%"
+            icon={<EnvironmentOutlined />}
+            accent={data.cumplimiento != null ? "#12b76a" : undefined}
+          />
         </Col>
       </Row>
 
-      <div style={{ marginTop: 24 }}>
-        <Title level={4}>Estado de Rutas en Tiempo Real</Title>
-        <Table columns={columns} dataSource={data} scroll={{ x: 600 }} />
-      </div>
+      <Card title={`Viajes de hoy · ${data.rutasTotal} rutas activas`} className="page-section" style={{ marginTop: 20 }}>
+        <Table
+          columns={columns}
+          dataSource={data.viajesEnTabla.map((v) => ({ ...v, key: v.id }))}
+          scroll={{ x: 600 }}
+          locale={{ emptyText: "No hay viajes registrados hoy" }}
+          pagination={{ pageSize: 10, showTotal: (t) => `${t} registros` }}
+          size="middle"
+        />
+      </Card>
     </>
   );
 }

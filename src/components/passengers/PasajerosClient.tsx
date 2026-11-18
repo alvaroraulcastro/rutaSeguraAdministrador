@@ -277,7 +277,7 @@ export default function PasajerosClient() {
               !searchQuery
                 ? {
                     label: "Añadir Pasajero",
-                    onClick: () => window.location.assign("/passengers/new"),
+                    onClick: () => router.push("/passengers/new"),
                     icon: <PlusOutlined />,
                   }
                 : undefined

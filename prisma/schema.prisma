@@ -140,14 +140,18 @@ model Parada {
 }
 
 model Viaje {
-  id             String            @id @default(cuid())
-  rutaId         String
-  ruta           Ruta              @relation(fields: [rutaId], references: [id])
-  fecha          DateTime          @default(now())
-  estado         EstadoViaje       @default(PENDIENTE)
-  notificaciones NotificacionLog[]
-  createdAt      DateTime          @default(now())
-  updatedAt      DateTime          @updatedAt
+  id                 String            @id @default(cuid())
+  rutaId             String
+  ruta               Ruta              @relation(fields: [rutaId], references: [id])
+  fecha              DateTime          @default(now())
+  estado             EstadoViaje       @default(PENDIENTE)
+  ultimaLat          Float?
+  ultimaLng          Float?
+  ultimaUbicacionEn  DateTime?
+  paradaActualOrden  Int               @default(1)
+  notificaciones     NotificacionLog[]
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
 }
 
 model NotificacionLog {

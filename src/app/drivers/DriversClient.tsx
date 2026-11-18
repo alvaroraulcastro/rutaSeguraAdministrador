@@ -1,134 +1,99 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import { Table, Card, Typography, Tag, Avatar, Input, Row, Col, Select, Space, Alert } from "antd";
+import PageHeader from "@/components/PageHeader";
+import StatCard from "@/components/StatCard";
+import PageLoading from "@/components/PageLoading";
 import {
-  Table,
-  Button,
-  Space,
-  Card,
-  Typography,
-  Tag,
-  Avatar,
-  Input,
-  Row,
-  Col,
-  Statistic,
-  Select,
-  Tooltip,
-} from "antd";
-import {
-  PlusOutlined,
-  EditOutlined,
-  DeleteOutlined,
   UserOutlined,
   CarOutlined,
   SearchOutlined,
   PhoneOutlined,
   MailOutlined,
 } from "@ant-design/icons";
-const { Title, Text } = Typography;
+import { useAuth } from "@/contexts/AuthContext";
+import { getApiUrl } from "@/lib/api";
 
-const MOCK_DRIVERS = [
-  {
-    key: "1",
-    name: "Juan Pérez",
-    email: "juan.perez@rutasegura.cl",
-    phone: "+56 9 1234 5678",
-    vehicle: "Mercedes-Benz Sprinter",
-    plate: "ABCD-12",
-    capacity: 15,
-    status: "En ruta",
-    rut: "12.345.678-9",
-  },
-  {
-    key: "2",
-    name: "María López",
-    email: "maria.lopez@rutasegura.cl",
-    phone: "+56 9 8765 4321",
-    vehicle: "Hyundai H1",
-    plate: "XYZ-987",
-    capacity: 8,
-    status: "Disponible",
-    rut: "98.765.432-1",
-  },
-  {
-    key: "3",
-    name: "Carlos Soto",
-    email: "carlos.soto@rutasegura.cl",
-    phone: "+56 9 5555 1234",
-    vehicle: "Toyota Hiace",
-    plate: "FGHL-45",
-    capacity: 12,
-    status: "En ruta",
-    rut: "11.222.333-4",
-  },
-  {
-    key: "4",
-    name: "Patricia Rojas",
-    email: "patricia.rojas@rutasegura.cl",
-    phone: "+56 9 4444 5678",
-    vehicle: "Nissan Urvan",
-    plate: "JKLM-90",
-    capacity: 10,
-    status: "Disponible",
-    rut: "15.666.777-8",
-  },
-  {
-    key: "5",
-    name: "Roberto Díaz",
-    email: "roberto.diaz@rutasegura.cl",
-    phone: "+56 9 3333 9999",
-    vehicle: "Mercedes-Benz Vito",
-    plate: "PQRS-33",
-    capacity: 6,
-    status: "Fuera de servicio",
-    rut: "18.999.000-1",
-  },
-];
+const { Text } = Typography;
+
+interface TransportistaApi {
+  id: string;
+  nombre: string;
+  email: string;
+  telefono: string;
+  patente: string | null;
+  modelo: string | null;
+  capacidad: number | null;
+  rutasAsignadas: number;
+  estadoOperativo: "En ruta" | "Disponible";
+}
 
 export default function DriversClient() {
+  const { user } = useAuth();
+  const [drivers, setDrivers] = useState<TransportistaApi[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchDrivers = async () => {
+      if (!user?.apiKey) return;
+      try {
+        setLoading(true);
+        const res = await fetch(getApiUrl("/api/v1/transportistas"), {
+          headers: { "X-API-Key": user.apiKey },
+        });
+        if (!res.ok) throw new Error("Error al cargar transportistas");
+        setDrivers(await res.json());
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Error desconocido");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchDrivers();
+  }, [user?.apiKey]);
 
   const columns = [
     {
       title: "Transportista",
-      dataIndex: "name",
-      key: "name",
-      render: (text: string, record: (typeof MOCK_DRIVERS)[0]) => (
+      dataIndex: "nombre",
+      key: "nombre",
+      render: (text: string, record: TransportistaApi) => (
         <Space direction="vertical" size={0}>
           <Space>
             <Avatar icon={<UserOutlined />} />
             <Text strong>{text}</Text>
           </Space>
           <Text type="secondary" style={{ fontSize: 12 }}>
-            {record.rut}
+            {record.id.slice(0, 10)}…
           </Text>
         </Space>
       ),
     },
     {
       title: "Vehículo",
-      dataIndex: "vehicle",
       key: "vehicle",
-      render: (text: string, record: (typeof MOCK_DRIVERS)[0]) => (
+      render: (_: unknown, record: TransportistaApi) => (
         <Space direction="vertical" size={0}>
           <Space>
             <CarOutlined />
-            <Text>{text}</Text>
+            <Text>{record.modelo ?? "Sin modelo"}</Text>
           </Space>
-          <Tag color="blue">{record.plate}</Tag>
+          {record.patente ? <Tag color="blue">{record.patente}</Tag> : <Text type="secondary">Sin patente</Text>}
         </Space>
       ),
     },
     {
       title: "Contacto",
       key: "contact",
-      render: (_: unknown, record: (typeof MOCK_DRIVERS)[0]) => (
+      render: (_: unknown, record: TransportistaApi) => (
         <Space direction="vertical" size={0}>
           <Space>
             <PhoneOutlined style={{ fontSize: 12 }} />
-            <Text style={{ fontSize: 12 }}>{record.phone}</Text>
+            <Text style={{ fontSize: 12 }}>{record.telefono}</Text>
           </Space>
           <Space>
             <MailOutlined style={{ fontSize: 12 }} />
@@ -141,94 +106,75 @@ export default function DriversClient() {
     },
     {
       title: "Capacidad",
-      dataIndex: "capacity",
-      key: "capacity",
+      dataIndex: "capacidad",
+      key: "capacidad",
       width: 90,
-      render: (n: number) => (
+      render: (n: number | null) => (
         <Space>
           <CarOutlined />
-          <Text>{n} pax</Text>
+          <Text>{n ?? "—"} {n != null ? "pax" : ""}</Text>
         </Space>
       ),
+    },
+    {
+      title: "Rutas",
+      dataIndex: "rutasAsignadas",
+      key: "rutasAsignadas",
+      width: 80,
     },
     {
       title: "Estado",
-      dataIndex: "status",
-      key: "status",
-      width: 130,
-      render: (status: string) => {
-        const config: Record<string, { color: string }> = {
-          Disponible: { color: "green" },
-          "En ruta": { color: "blue" },
-          "Fuera de servicio": { color: "red" },
-        };
-        return <Tag color={config[status]?.color ?? "default"}>{status}</Tag>;
-      },
-    },
-    {
-      title: "Acciones",
-      key: "action",
+      dataIndex: "estadoOperativo",
+      key: "estadoOperativo",
       width: 120,
-      render: () => (
-        <Space>
-          <Tooltip title="Editar">
-            <Button icon={<EditOutlined />} type="text" size="small" aria-label="Editar transportista" />
-          </Tooltip>
-          <Tooltip title="Eliminar">
-            <Button icon={<DeleteOutlined />} type="text" danger size="small" aria-label="Eliminar transportista" />
-          </Tooltip>
-        </Space>
-      ),
+      render: (status: string) => {
+        const color = status === "En ruta" ? "blue" : "green";
+        return <Tag color={color}>{status}</Tag>;
+      },
     },
   ];
 
-  const filtered = MOCK_DRIVERS.filter((d) => {
+  const filtered = drivers.filter((d) => {
     const matchSearch =
       !search ||
-      d.name.toLowerCase().includes(search.toLowerCase()) ||
-      d.plate.toLowerCase().includes(search.toLowerCase());
-    const matchStatus = !statusFilter || d.status === statusFilter;
+      d.nombre.toLowerCase().includes(search.toLowerCase()) ||
+      (d.patente?.toLowerCase().includes(search.toLowerCase()) ?? false);
+    const matchStatus = !statusFilter || d.estadoOperativo === statusFilter;
     return matchSearch && matchStatus;
   });
 
-  const enRuta = MOCK_DRIVERS.filter((d) => d.status === "En ruta").length;
-  const disponibles = MOCK_DRIVERS.filter((d) => d.status === "Disponible").length;
+  const enRuta = drivers.filter((d) => d.estadoOperativo === "En ruta").length;
+  const disponibles = drivers.filter((d) => d.estadoOperativo === "Disponible").length;
+
+  if (loading) {
+    return <PageLoading label="Cargando transportistas..." />;
+  }
+
+  if (error) {
+    return <Alert type="error" message={error} showIcon />;
+  }
 
   return (
     <>
-      <div style={{ marginBottom: 24, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 16 }}>
-        <Title level={2} style={{ margin: 0 }}>
-          Transportistas
-        </Title>
-        <Button type="primary" icon={<PlusOutlined />} aria-label="Nuevo transportista">
-          Nuevo Transportista
-        </Button>
-      </div>
+      <PageHeader
+        title="Transportistas"
+        description="Conductores, vehículos y disponibilidad según viajes en curso."
+      />
 
-      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+      <Row gutter={[16, 16]} style={{ marginBottom: 20 }}>
         <Col xs={24} sm={8}>
-          <Card>
-            <Statistic
-              title="Total Transportistas"
-              value={MOCK_DRIVERS.length}
-              prefix={<UserOutlined />}
-            />
-          </Card>
+          <StatCard title="Total" value={drivers.length} icon={<UserOutlined />} />
         </Col>
         <Col xs={24} sm={8}>
-          <Card>
-            <Statistic title="En ruta" value={enRuta} prefix={<CarOutlined />} styles={{ content: { color: "#1677ff" } }} />
-          </Card>
+          <StatCard title="En ruta" value={enRuta} icon={<CarOutlined />} accent="#1565e8" />
         </Col>
         <Col xs={24} sm={8}>
-          <Card>
-            <Statistic title="Disponibles" value={disponibles} styles={{ content: { color: "#52c41a" } }} />
-          </Card>
+          <StatCard title="Disponibles" value={disponibles} accent="#12b76a" />
         </Col>
       </Row>
 
       <Card
-        title="Listado de transportistas"
+        title="Listado"
         extra={
           <Space wrap>
             <Input
@@ -249,7 +195,6 @@ export default function DriversClient() {
               options={[
                 { value: "Disponible", label: "Disponible" },
                 { value: "En ruta", label: "En ruta" },
-                { value: "Fuera de servicio", label: "Fuera de servicio" },
               ]}
               aria-label="Filtrar por estado"
             />
@@ -258,10 +203,9 @@ export default function DriversClient() {
       >
         <Table
           columns={columns}
-          dataSource={filtered}
-          pagination={{ pageSize: 10, showSizeChanger: true, showTotal: (t) => `Total: ${t}` }}
+          dataSource={filtered.map((d) => ({ ...d, key: d.id }))}
+          pagination={{ pageSize: 10, showTotal: (t) => `Total: ${t}` }}
           scroll={{ x: 700 }}
-          rowKey="key"
         />
       </Card>
     </>

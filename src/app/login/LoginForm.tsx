@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Form, Input, Button, Typography, message } from "antd";
+import { App, Form, Input, Button, Typography } from "antd";
 import { UserOutlined, LockOutlined } from "@ant-design/icons";
 import AuthLayout from "@/components/AuthLayout";
 import { useAuth } from "@/contexts/AuthContext";
@@ -11,6 +11,7 @@ import { useAuth } from "@/contexts/AuthContext";
 const { Text } = Typography;
 
 export default function LoginForm() {
+  const { message } = App.useApp();
   const router = useRouter();
   const { login } = useAuth();
   const [loading, setLoading] = useState(false);

@@ -12,6 +12,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "/drivers",
     "/passengers",
     "/routes",
+    "/trips",
     "/notifications",
     "/reports",
     "/settings",

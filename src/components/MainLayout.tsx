@@ -1,7 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import Link from "next/link";
+import React, { useState, useEffect, useMemo } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { getApiUrl } from "@/lib/api";
@@ -15,6 +14,8 @@ import {
   EnvironmentOutlined,
   UserOutlined,
   FileOutlined,
+  ScheduleOutlined,
+  MenuOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
 } from "@ant-design/icons";
@@ -31,38 +32,13 @@ import {
   Drawer,
   Tooltip,
   Typography,
+  Dropdown,
 } from "antd";
 
 const { Text } = Typography;
-
 const { Header, Content, Footer, Sider } = Layout;
 
-type MenuItem = Required<MenuProps>["items"][number];
-
-function getItem(
-  label: React.ReactNode,
-  key: React.Key,
-  icon?: React.ReactNode,
-  children?: MenuItem[]
-): MenuItem {
-  return {
-    key,
-    icon,
-    children,
-    label,
-  } as MenuItem;
-}
-
-const items: MenuItem[] = [
-  getItem(<Link href="/">Dashboard</Link>, "/", <PieChartOutlined />),
-  getItem(<Link href="/profile">Mi Perfil</Link>, "/profile", <UserOutlined />),
-  getItem(<Link href="/drivers">Transportistas</Link>, "/drivers", <CarOutlined />),
-  getItem(<Link href="/passengers">Pasajeros</Link>, "/passengers", <TeamOutlined />),
-  getItem(<Link href="/routes">Rutas</Link>, "/routes", <EnvironmentOutlined />),
-  getItem(<Link href="/notifications">Notificaciones</Link>, "/notifications", <BellOutlined />),
-  getItem(<Link href="/reports">Reportes</Link>, "/reports", <FileOutlined />),
-  getItem(<Link href="/settings">Configuración</Link>, "/settings", <SettingOutlined />),
-];
+const ADMIN_ONLY_KEYS = new Set(["/drivers", "/settings"]);
 
 const pageTitles: Record<string, string> = {
   "/": "Dashboard",
@@ -70,6 +46,7 @@ const pageTitles: Record<string, string> = {
   "/drivers": "Transportistas",
   "/passengers": "Pasajeros",
   "/routes": "Rutas",
+  "/trips": "Viajes",
   "/notifications": "Notificaciones",
   "/reports": "Reportes",
   "/settings": "Configuración",
@@ -82,6 +59,7 @@ interface MainLayoutProps {
 const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const [notifCount, setNotifCount] = useState(0);
   const pathname = usePathname() ?? "/";
   const router = useRouter();
@@ -91,9 +69,15 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   } = theme.useToken();
 
   const isAdmin = user?.rol === "ADMIN";
-  const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
 
-  // Fetch notification count in real-time (polling cada 30s)
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 1023px)");
+    const update = () => setIsMobile(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
+
   useEffect(() => {
     const fetchCount = async () => {
       if (!user?.apiKey) return;
@@ -106,7 +90,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
           setNotifCount(data.total ?? 0);
         }
       } catch {
-        // Silencioso: no romper la UI si falla el conteo
+        /* ignore */
       }
     };
     fetchCount();
@@ -114,122 +98,188 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
     return () => clearInterval(interval);
   }, [user?.apiKey]);
 
-  const filteredItems = items.filter((item) => {
-    if (!item) return false;
-    const key = typeof item === "object" && item !== null && "key" in item ? item.key : null;
-    if (!isAdmin && (key === "/drivers" || key === "/settings")) {
-      return false;
-    }
-    return true;
-  });
+  const menuItems: MenuProps["items"] = useMemo(() => {
+    const all: MenuProps["items"] = [
+      { type: "group", label: "Resumen", children: [{ key: "/", icon: <PieChartOutlined />, label: "Dashboard" }] },
+      {
+        type: "group",
+        label: "Operación",
+        children: [
+          { key: "/passengers", icon: <TeamOutlined />, label: "Pasajeros" },
+          { key: "/routes", icon: <EnvironmentOutlined />, label: "Rutas" },
+          { key: "/trips", icon: <ScheduleOutlined />, label: "Viajes" },
+          { key: "/notifications", icon: <BellOutlined />, label: "Notificaciones" },
+        ],
+      },
+      {
+        type: "group",
+        label: "Administración",
+        children: [
+          { key: "/drivers", icon: <CarOutlined />, label: "Transportistas" },
+          { key: "/reports", icon: <FileOutlined />, label: "Reportes" },
+          { key: "/settings", icon: <SettingOutlined />, label: "Configuración" },
+        ],
+      },
+      { type: "group", label: "Cuenta", children: [{ key: "/profile", icon: <UserOutlined />, label: "Mi Perfil" }] },
+    ];
+
+    if (isAdmin) return all;
+
+    return all
+      .map((group) => {
+        if (!group || typeof group !== "object" || !("children" in group) || !group.children) return group;
+        const children = group.children.filter((item) => {
+          if (!item || typeof item !== "object" || !("key" in item)) return true;
+          return !ADMIN_ONLY_KEYS.has(String(item.key));
+        });
+        if (children.length === 0) return null;
+        return { ...group, children };
+      })
+      .filter(Boolean) as MenuProps["items"];
+  }, [isAdmin]);
+
+  const selectedKey = useMemo(() => {
+    if (pageTitles[pathname]) return pathname;
+    const base = pathname.split("/").slice(0, 2).join("/") || "/";
+    return pageTitles[base] ? base : pathname;
+  }, [pathname]);
+
+  const handleMenuClick: MenuProps["onClick"] = ({ key }) => {
+    router.push(String(key));
+    setMobileOpen(false);
+  };
 
   const handleLogout = () => {
     logout();
     router.push("/login");
   };
 
+  const siderWidth = collapsed && !isMobile ? 80 : 240;
+
   const sidebarContent = (
     <>
       <div
+        role="banner"
+        aria-label="RutaSegura"
         style={{
-          height: 48,
-          margin: 16,
-          background: "rgba(255, 255, 255, 0.15)",
+          height: 52,
+          margin: "12px 12px 8px",
+          padding: collapsed && !isMobile ? 0 : "0 12px",
+          background: "linear-gradient(135deg, rgba(21,101,232,0.35), rgba(255,255,255,0.08))",
+          border: "1px solid rgba(255,255,255,0.12)",
           display: "flex",
           alignItems: "center",
-          justifyContent: "center",
+          justifyContent: collapsed && !isMobile ? "center" : "flex-start",
+          gap: 10,
           color: "white",
-          fontWeight: "bold",
           borderRadius: borderRadiusLG,
-          fontSize: collapsed && !mobileOpen ? 14 : 16,
-          transition: "all 0.2s",
+          fontWeight: 600,
+          fontSize: collapsed && !isMobile ? 14 : 15,
+          letterSpacing: "-0.01em",
         }}
-        aria-label="RutaSegura Logo"
       >
-        {collapsed && !mobileOpen ? "RS" : "RutaSegura"}
+        <span
+          style={{
+            width: 32,
+            height: 32,
+            borderRadius: 10,
+            background: "rgba(255,255,255,0.18)",
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            flexShrink: 0,
+          }}
+          aria-hidden
+        >
+          RS
+        </span>
+        {!(collapsed && !isMobile) && <span>RutaSegura</span>}
       </div>
       <Menu
         theme="dark"
-        selectedKeys={[pathname]}
         mode="inline"
-        items={filteredItems}
-        onClick={() => setMobileOpen(false)}
+        selectedKeys={[selectedKey]}
+        items={menuItems}
+        onClick={handleMenuClick}
+        style={{ background: "transparent", borderInlineEnd: "none" }}
       />
     </>
   );
 
+  const userMenuItems: MenuProps["items"] = [
+    { key: "profile", icon: <UserOutlined />, label: "Mi perfil", onClick: () => router.push("/profile") },
+    { type: "divider" },
+    { key: "logout", icon: <LogoutOutlined />, label: "Cerrar sesión", danger: true, onClick: handleLogout },
+  ];
+
   return (
     <Layout style={{ minHeight: "100vh" }}>
-      {/* Desktop Sider */}
-      <Sider
-        collapsible
-        collapsed={collapsed}
-        onCollapse={(value) => setCollapsed(value)}
-        breakpoint="lg"
-        collapsedWidth={80}
-        style={{
-          display: isMobile ? "none" : "flex",
-          position: "fixed",
-          height: "100vh",
-          left: 0,
-          top: 0,
-          bottom: 0,
-          zIndex: 50,
-        }}
-        trigger={null}
-      >
-        {sidebarContent}
-      </Sider>
+      {!isMobile && (
+        <Sider
+          width={240}
+          collapsed={collapsed}
+          collapsedWidth={80}
+          style={{
+            position: "fixed",
+            insetBlock: 0,
+            insetInlineStart: 0,
+            zIndex: 100,
+            borderInlineEnd: "1px solid rgba(255,255,255,0.06)",
+          }}
+        >
+          {sidebarContent}
+        </Sider>
+      )}
 
-      {/* Mobile Drawer */}
       <Drawer
         placement="left"
-        closable={false}
+        closable
+        title="Menú"
         onClose={() => setMobileOpen(false)}
-        open={mobileOpen}
-        styles={{ body: { padding: 0, background: "#001529" }, wrapper: { width: 240 } }}
+        open={isMobile && mobileOpen}
+        styles={{ body: { padding: 0, background: "#0f172a" }, header: { background: "#0f172a", color: "#fff" } }}
+        width={280}
       >
-        <div style={{ height: "100vh" }}>{sidebarContent}</div>
+        <div style={{ minHeight: "100%" }}>{sidebarContent}</div>
       </Drawer>
 
-      <Layout
-        style={{
-          marginLeft: isMobile ? 0 : collapsed ? 80 : 200,
-          transition: "margin-left 0.2s",
-        }}
-      >
+      <Layout style={{ marginInlineStart: isMobile ? 0 : siderWidth, transition: "margin 0.2s ease" }}>
         <Header
           style={{
-            padding: "0 16px",
+            padding: "0 16px 0 20px",
             background: colorBgContainer,
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
             position: "sticky",
             top: 0,
-            zIndex: 40,
-            boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+            zIndex: 90,
+            borderBottom: "1px solid #e8edf5",
+            height: 64,
           }}
         >
-          <Space>
-            {isMobile && (
-              <Button
-                type="text"
-                icon={mobileOpen ? <MenuFoldOutlined /> : <MenuUnfoldOutlined />}
-                onClick={() => setMobileOpen(!mobileOpen)}
-                aria-label={mobileOpen ? "Cerrar menú" : "Abrir menú"}
-              />
-            )}
+          <Space size="middle">
+            <Button
+              type="text"
+              icon={
+                isMobile ? (
+                  <MenuOutlined />
+                ) : collapsed ? (
+                  <MenuUnfoldOutlined />
+                ) : (
+                  <MenuFoldOutlined />
+                )
+              }
+              onClick={() => (isMobile ? setMobileOpen(true) : setCollapsed((c) => !c))}
+              aria-label={isMobile ? "Abrir menú" : collapsed ? "Expandir menú" : "Colapsar menú"}
+            />
             <Breadcrumb
-              items={[
-                { title: "Admin" },
-                { title: pageTitles[pathname] || "Dashboard" },
-              ]}
+              items={[{ title: "Panel" }, { title: pageTitles[selectedKey] || "Inicio" }]}
             />
           </Space>
           <Space size="middle">
-            <Badge count={notifCount} size="small" overflowCount={99}>
-              <Tooltip title="Notificaciones">
+            <Badge count={notifCount} size="small" overflowCount={99} offset={[-2, 2]}>
+              <Tooltip title="Ver notificaciones">
                 <Button
                   type="text"
                   icon={<BellOutlined />}
@@ -238,38 +288,38 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                 />
               </Tooltip>
             </Badge>
-            <Space size="small" className="hidden sm:inline-flex">
-              <Avatar icon={<UserOutlined />} size="small" />
-              <span className="text-sm font-medium">{user?.nombre ?? "Usuario"}</span>
-            </Space>
-            <Tooltip title="Cerrar sesión">
-              <Button
-                type="text"
-                icon={<LogoutOutlined />}
-                onClick={handleLogout}
-                aria-label="Cerrar sesión"
-              />
-            </Tooltip>
+            <Dropdown menu={{ items: userMenuItems }} trigger={["click"]} placement="bottomRight">
+              <button
+                type="button"
+                className="flex items-center gap-2 rounded-lg border-0 bg-transparent px-2 py-1 cursor-pointer hover:bg-slate-50"
+                aria-label="Menú de usuario"
+              >
+                <Avatar icon={<UserOutlined />} size="small" style={{ backgroundColor: "#1565e8" }} />
+                <Text style={{ maxWidth: 140 }} ellipsis className="hidden sm:inline">
+                  {user?.nombre ?? "Usuario"}
+                </Text>
+              </button>
+            </Dropdown>
           </Space>
         </Header>
         <main>
-          <Content style={{ margin: "16px" }}>
+          <Content style={{ padding: "16px 16px 24px", maxWidth: 1440, marginInline: "auto", width: "100%" }}>
             <div
+              className="animate-fade-in content-panel"
               style={{
                 padding: 24,
                 minHeight: 360,
                 background: colorBgContainer,
                 borderRadius: borderRadiusLG,
               }}
-              className="animate-fade-in"
             >
               {children}
             </div>
           </Content>
         </main>
-        <Footer style={{ textAlign: "center", padding: "16px" }}>
-          <Text type="secondary" className="text-xs">
-            RutaSegura ©{new Date().getFullYear()} — Panel de Administración de Transporte
+        <Footer style={{ textAlign: "center", padding: "12px 16px 20px", background: "transparent" }}>
+          <Text type="secondary" style={{ fontSize: 12 }}>
+            RutaSegura © {new Date().getFullYear()} — Administración de transporte
           </Text>
         </Footer>
       </Layout>

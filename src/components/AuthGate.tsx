@@ -47,7 +47,7 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          background: "#f0f2f5",
+          background: "var(--rs-surface)",
           gap: 16,
         }}
         role="status"

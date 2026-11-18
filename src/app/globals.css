@@ -3,9 +3,11 @@
 @tailwind utilities;
 
 :root {
-  --foreground-rgb: 0, 0, 0;
-  --background-start-rgb: 214, 219, 220;
-  --background-end-rgb: 255, 255, 255;
+  --rs-brand: #1565e8;
+  --rs-brand-soft: #e8f0fe;
+  --rs-surface: #f4f6fb;
+  --rs-sider: #0f172a;
+  --foreground-rgb: 15, 23, 42;
 }
 
 html {
@@ -17,15 +19,16 @@ html {
 body {
   margin: 0;
   padding: 0;
+  font-family: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
+  color: rgb(var(--foreground-rgb));
+  background: var(--rs-surface);
 }
 
-/* Focus visible para accesibilidad */
 *:focus-visible {
-  outline: 2px solid #1677ff;
+  outline: 2px solid var(--rs-brand);
   outline-offset: 2px;
 }
 
-/* Scrollbar styling */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -36,10 +39,69 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #bfbfbf;
+  background: #cbd5e1;
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #8c8c8c;
+  background: #94a3b8;
+}
+
+@keyframes rs-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes rs-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: rs-fade-in 0.35s ease-out both;
+}
+
+.animate-slide-up {
+  animation: rs-slide-up 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.stat-card {
+  border: 1px solid #e8edf5;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.stat-card:hover {
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+  transform: translateY(-1px);
+}
+
+.content-panel {
+  border: 1px solid #e8edf5;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+}
+
+.page-section {
+  margin-top: 8px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in,
+  .animate-slide-up,
+  .stat-card {
+    animation: none;
+    transition: none;
+  }
 }
