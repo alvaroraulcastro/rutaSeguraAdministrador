@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Table,
   Button,
@@ -41,7 +42,8 @@ interface Ruta {
 }
 
 export default function RutasClient() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
+  const router = useRouter();
   const [rutas, setRutas] = useState<Ruta[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -57,6 +59,11 @@ export default function RutasClient() {
           },
         });
 
+        if (response.status === 401) {
+          logout();
+          router.replace("/login");
+          return;
+        }
         if (!response.ok) {
           const errorData = await response.json();
           throw new Error(errorData.message || "Error al obtener las rutas");
@@ -76,7 +83,7 @@ export default function RutasClient() {
     };
 
     fetchRutas();
-  }, [user?.apiKey]);
+  }, [user?.apiKey, logout, router]);
 
   const handleDelete = (id: string) => {
     Modal.confirm({
@@ -87,14 +94,25 @@ export default function RutasClient() {
       cancelText: "No, cancelar",
       onOk: async () => {
         if (!user?.apiKey) return;
+        if (user.rol !== "TRANSPORTISTA") return;
         try {
           const response = await fetch(getApiUrl(`/api/v1/rutas/${id}`), {
             method: "DELETE",
             headers: { "X-API-Key": user.apiKey },
           });
 
+          if (response.status === 401) {
+            logout();
+            router.replace("/login");
+            return;
+          }
           if (!response.ok) {
-            throw new Error("Error al eliminar la ruta");
+            const errorData: unknown = await response.json().catch(() => null);
+            const errorMessage =
+              typeof errorData === "object" && errorData !== null && "error" in errorData
+                ? String((errorData as { error: unknown }).error)
+                : "Error al eliminar la ruta";
+            throw new Error(errorMessage);
           }
 
           setRutas((prev) => prev.filter((ruta) => ruta.id !== id));
@@ -113,6 +131,8 @@ export default function RutasClient() {
       },
     });
   };
+
+  const canMutate = user?.rol === "TRANSPORTISTA";
 
   const columns = [
     {
@@ -169,14 +189,18 @@ export default function RutasClient() {
               <Button icon={<EyeOutlined />} />
             </Link>
           </Tooltip>
-          <Tooltip title="Editar">
-            <Link href={`/routes/${record.id}/edit`}>
-              <Button icon={<EditOutlined />} />
-            </Link>
-          </Tooltip>
-          <Tooltip title="Eliminar">
-            <Button icon={<DeleteOutlined />} danger onClick={() => handleDelete(record.id)} />
-          </Tooltip>
+          {canMutate ? (
+            <>
+              <Tooltip title="Editar">
+                <Link href={`/routes/${record.id}/edit`}>
+                  <Button icon={<EditOutlined />} />
+                </Link>
+              </Tooltip>
+              <Tooltip title="Eliminar">
+                <Button icon={<DeleteOutlined />} danger onClick={() => handleDelete(record.id)} />
+              </Tooltip>
+            </>
+          ) : null}
         </Space>
       ),
     },
@@ -201,11 +225,13 @@ export default function RutasClient() {
           onSearch={(value) => console.log("Searching for:", value)}
         />
         <Space>
-          <Link href="/routes/new">
-            <Button type="primary" icon={<PlusOutlined />}>
-              Crear Ruta
-            </Button>
-          </Link>
+          {canMutate ? (
+            <Link href="/routes/new">
+              <Button type="primary" icon={<PlusOutlined />}>
+                Crear Ruta
+              </Button>
+            </Link>
+          ) : null}
         </Space>
       </Space>
       <Table columns={columns} dataSource={rutas} rowKey="id" />

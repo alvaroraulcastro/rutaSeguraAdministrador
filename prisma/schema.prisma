@@ -17,6 +17,11 @@ enum TipoRuta {
   IDA_Y_VUELTA
 }
 
+enum TipoInicioRuta {
+  DOMICILIO_TRANSPORTISTA
+  VEHICULO
+}
+
 enum EstadoViaje {
   PENDIENTE
   EN_CURSO
@@ -108,6 +113,11 @@ model Ruta {
   id              String   @id @default(cuid())
   nombre          String
   tipo            TipoRuta @default(IDA)
+  inicioTipo      TipoInicioRuta? @default(VEHICULO)
+  inicioDireccion String?
+  inicioComuna    String?
+  latInicio       Float?
+  lngInicio       Float?
   transportistaId String
   transportista   Usuario  @relation(fields: [transportistaId], references: [id])
   paradas         Parada[]
@@ -130,23 +140,30 @@ model Parada {
 }
 
 model Viaje {
-  id             String            @id @default(cuid())
-  rutaId         String
-  ruta           Ruta              @relation(fields: [rutaId], references: [id])
-  fecha          DateTime          @default(now())
-  estado         EstadoViaje       @default(PENDIENTE)
-  notificaciones NotificacionLog[]
-  createdAt      DateTime          @default(now())
-  updatedAt      DateTime          @updatedAt
+  id                 String            @id @default(cuid())
+  rutaId             String
+  ruta               Ruta              @relation(fields: [rutaId], references: [id])
+  fecha              DateTime          @default(now())
+  estado             EstadoViaje       @default(PENDIENTE)
+  ultimaLat          Float?
+  ultimaLng          Float?
+  ultimaUbicacionEn  DateTime?
+  paradaActualOrden  Int               @default(1)
+  notificaciones     NotificacionLog[]
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
 }
 
 model NotificacionLog {
-  id         String            @id @default(cuid())
-  mensaje    String
-  canal      CanalNotificacion
-  viajeId    String
-  viaje      Viaje             @relation(fields: [viajeId], references: [id])
-  pasajeroId String
-  pasajero   Pasajero          @relation(fields: [pasajeroId], references: [id])
-  enviadoEn  DateTime          @default(now())
+  id           String            @id @default(cuid())
+  mensaje      String
+  canal        CanalNotificacion
+  tipo         String            // EN_CAMINO, EN_PUERTA, LLEGADA_DESTINO, etc.
+  estado       String            @default("ENVIADO") // ENVIADO, PROCESANDO, FALLIDO
+  destinatario String?           // nombre del contacto que recibió la notificación
+  viajeId      String
+  viaje        Viaje             @relation(fields: [viajeId], references: [id])
+  pasajeroId   String
+  pasajero     Pasajero          @relation(fields: [pasajeroId], references: [id])
+  enviadoEn    DateTime          @default(now())
 }

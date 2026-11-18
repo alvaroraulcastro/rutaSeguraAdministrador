@@ -49,6 +49,9 @@ function parseUser(raw: string | null): User | null {
   }
 }
 
+let cachedUserRaw: string | null = null;
+let cachedUserSnapshot: User | null = null;
+
 function subscribeAuth(onStoreChange: () => void) {
   if (typeof window === "undefined") return () => {};
   const handler = () => onStoreChange();
@@ -62,16 +65,15 @@ function subscribeAuth(onStoreChange: () => void) {
 
 function getUserSnapshot() {
   if (typeof window === "undefined") return null;
-  return parseUser(localStorage.getItem(AUTH_STORAGE_KEY));
+  const raw = localStorage.getItem(AUTH_STORAGE_KEY);
+  if (raw === cachedUserRaw) return cachedUserSnapshot;
+  cachedUserRaw = raw;
+  cachedUserSnapshot = parseUser(raw);
+  return cachedUserSnapshot;
 }
 
 function getUserServerSnapshot() {
   return null;
-}
-
-function subscribeNoop(_onStoreChange: () => void) {
-  void _onStoreChange;
-  return () => {};
 }
 
 function shouldLogAuth() {
@@ -92,7 +94,7 @@ function maskEmail(email: string) {
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const user = useSyncExternalStore(subscribeAuth, getUserSnapshot, getUserServerSnapshot);
-  const isLoading = !useSyncExternalStore(subscribeNoop, () => true, () => false);
+  const isLoading = false;
   const isProd = process.env.NODE_ENV === "production";
 
   const login = useCallback(async (email: string, password: string) => {

@@ -10,35 +10,49 @@ const AUTH_PATHS = ["/login", "/register", "/forgot-password"];
 const ADMIN_ONLY_PATHS = ["/drivers", "/settings"];
 
 export default function AuthGate({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname();
+  const pathnameFromHook = usePathname();
   const router = useRouter();
-  const { user, isLoading } = useAuth();
-  const isAuthPath = AUTH_PATHS.includes(pathname);
+  const { user } = useAuth();
+
+  const rawPathname =
+    pathnameFromHook ?? (typeof window !== "undefined" ? window.location.pathname : null);
+
+  const pathname =
+    typeof rawPathname === "string"
+      ? rawPathname.replace(/\/$/, "") || "/"
+      : null;
+
+  const isAuthPath = typeof pathname === "string" ? AUTH_PATHS.includes(pathname) : false;
+  const isAdminOnlyPath =
+    typeof pathname === "string" ? ADMIN_ONLY_PATHS.includes(pathname) : false;
+
+  let redirectTo: string | null = null;
+  if (typeof pathname === "string") {
+    if (isAuthPath) redirectTo = user ? "/" : null;
+    else if (!user) redirectTo = "/login";
+    else if (user.rol !== "ADMIN" && isAdminOnlyPath) redirectTo = "/";
+  }
 
   useEffect(() => {
-    if (isLoading) return;
-    if (isAuthPath) {
-      if (user) router.replace("/");
-    } else {
-      if (!user) {
-        router.replace("/login");
-      } else if (user.rol !== "ADMIN" && ADMIN_ONLY_PATHS.includes(pathname)) {
-        // Redirigir si un transportista intenta acceder a rutas de admin
-        router.replace("/");
-      }
-    }
-  }, [user, isLoading, isAuthPath, router, pathname]);
+    if (!redirectTo) return;
+    router.replace(redirectTo);
+  }, [redirectTo, router]);
 
-  if (isLoading) {
+  if (typeof pathname !== "string" || redirectTo) {
     return (
       <div
         style={{
           minHeight: "100vh",
           display: "flex",
+          flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          background: "#f0f2f5",
+          background: "var(--rs-surface)",
+          gap: 16,
         }}
+        role="status"
+        aria-label="Cargando aplicación"
+        aria-busy="true"
       >
         <Spin size="large" description="Cargando..." />
       </div>

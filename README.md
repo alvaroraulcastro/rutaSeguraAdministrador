@@ -1,238 +1,190 @@
-# 🚐 RutaSegura — Panel de Administración Web
+# RutaSegura — Panel de administración y API
 
-Este repositorio contiene la aplicación **Web Admin** del sistema **RutaSegura**, una plataforma integral para la gestión de transporte particular de personas con notificaciones automáticas basadas en GPS.
+Monorepo **Next.js** que incluye el **panel web** para operadores/administradores y la **API REST** (`/api/v1`) consumida por el panel y por la futura app móvil del transportista. El objetivo del producto es gestionar pasajeros, rutas y viajes, y disparar **alertas por proximidad GPS** a contactos de cada pasajero.
 
-## � Estado del Proyecto
+## Estado del proyecto
 
-**✅ Fase 1 Completada** - Sistema base implementado
-**🚧 Fase 2 en Desarrollo** - GPS y notificaciones
+| Área | Estado | Notas |
+|------|--------|--------|
+| API maestros (auth, pasajeros, rutas, paradas) | Operativo | CRUD + validación Zod |
+| API viajes + ubicación GPS | Operativo (MVP) | Haversine, logs en `NotificacionLog`; FCM opcional |
+| Panel web | Operativo | Pasajeros/rutas con API; dashboard, reportes y viajes con datos reales |
+| App transportista (Expo) | Pendiente | Repo aparte; consume la misma API |
+| Push / SMS reales | Parcial | `FCM_SERVER_KEY` + Twilio aún no integrados en producción |
 
-### 📈 Progreso Actual
-- **Backend API:** 100% completado (20+ endpoints)
-- **Panel Web Admin:** 90% completado
-- **App Android:** 0% (próxima fase)
-- **Sistema de Notificaciones:** 30% completado
+Documentación ampliada en [`docs/`](./docs/). Contrato HTTP detallado: [`docs/documentacion_endpoints.md`](./docs/documentacion_endpoints.md).
 
-## 🚀 Stack Tecnológico
+## Stack
 
-### Frontend & Backend
-- **Framework:** [Next.js 14+](https://nextjs.org/) con App Router
-- **UI Framework:** [Ant Design (antd)](https://ant.design/) + [Tailwind CSS](https://tailwindcss.com/)
-- **Lenguaje:** [TypeScript](https://www.typescriptlang.org/)
-- **Base de datos:** PostgreSQL con [Prisma ORM](https://www.prisma.io/)
-- **Autenticación:** JWT con sistema propio
-- **Despliegue:** [Vercel](https://vercel.com/)
+| Capa | Tecnología |
+|------|------------|
+| Framework | [Next.js 16](https://nextjs.org/) (App Router), build con **webpack** (`--webpack` obligatorio por Prisma) |
+| UI | [Ant Design 6](https://ant.design/) + [Tailwind CSS 4](https://tailwindcss.com/) |
+| Runtime UI | React 19 |
+| Base de datos | PostgreSQL |
+| ORM | Prisma 7 (`@prisma/adapter-pg`) |
+| Validación | Zod 4 |
+| Mapas (admin) | Leaflet + react-leaflet |
+| Auth API | **API Key** (hash bcrypt en DB; clave plana solo en cliente tras login) |
+| Deploy típico | Vercel |
 
-### Próximas Integraciones
-- **App Mobile:** React Native con Expo
-- **Notificaciones:** Firebase Cloud Messaging (FCM)
-- **GPS:** Expo Location API
-- **Mapas:** Google Maps API
-- **SMS/WhatsApp:** Twilio API
+## Funcionalidades del panel
 
-## 🎯 Funcionalidades Implementadas
+- **Dashboard:** KPIs del día (`/api/v1/dashboard/resumen`).
+- **Pasajeros y rutas:** CRUD con mapa (domicilio/destino, contactos de notificación).
+- **Viajes:** listado, iniciar/finalizar desde UI de prueba (`/trips`).
+- **Transportistas:** listado desde API (solo lectura; rol `ADMIN`).
+- **Notificaciones:** historial desde `NotificacionLog`.
+- **Reportes:** agregación por período (`/api/v1/reportes/operacion`).
+- **Auth:** login, registro, recuperación de contraseña (email no enviado aún; token dev en no-prod).
 
-### 🔐 Sistema de Autenticación
-- Login/Logout con JWT
-- Registro de usuarios administradores
-- Recuperación y cambio de contraseña
-- Perfiles de usuario
+Rutas solo admin: `/drivers`, `/settings` (ver `AuthGate`).
 
-### 👥 Gestión de Transportistas
-- CRUD completo de conductores
-- Registro de vehículos (patente, modelo, capacidad)
-- Asignación de API Keys únicas
-- Perfiles con información de contacto
+## Requisitos
 
-### 🧍 Gestión de Pasajeros
-- Registro completo con domicilio y destino
-- Coordenadas GPS de ubicaciones
-- Contactos de notificación configurables
-- Gestión de información de contacto
+- **Node.js** 20 LTS recomendado (mínimo 18).
+- **PostgreSQL** 12+.
+- **npm** 9+.
 
-### 🛣️ Gestión de Rutas
-- Creación de rutas con orden de paradas
-- Tipos de ruta: Ida, Vuelta, Ida y Vuelta
-- Asignación de pasajeros a rutas
-- Gestión de días activos (Lunes a Domingo)
-
-### 📊 Panel de Control
-- Dashboard con métricas y estadísticas
-- Vista de rutas activas
-- Interfaz responsive con Ant Design
-- Navegación intuitiva
-
-## 🚧 Funcionalidades en Desarrollo
-
-### 📍 Tracking GPS en Tiempo Real
-- Recepción de ubicaciones desde app mobile
-- Cálculo de distancia a próxima parada
-- Geofencing para notificaciones automáticas
-
-### 🔔 Sistema de Notificaciones
-- Notificaciones Push con FCM
-- Integración con Twilio para SMS/WhatsApp
-- Logs de notificaciones enviadas
-- Configuración por contacto
-
-### 📱 App Android para Transportistas
-- Login mobile
-- Vista de rutas del día
-- Tracking GPS automático
-- Controles de inicio/fin de viaje
-
-## 🛠️ Instalación y Desarrollo
-
-### Prerrequisitos
-- Node.js 18+ 
-- PostgreSQL 12+
-- npm o yarn
-
-### Configuración Local
-
-1. **Clona el repositorio:**
-   ```bash
-   git clone <url-del-repositorio>
-   cd ruta-segura-admin
-   ```
-
-2. **Instala dependencias:**
-   ```bash
-   npm install
-   ```
-
-3. **Configura variables de entorno:**
-   ```bash
-   cp .env.example .env.local
-   ```
-   
-   Edita `.env.local` con:
-   ```env
-   DATABASE_URL="postgresql://usuario:password@localhost:5432/rutasegura"
-   JWT_SECRET="tu-jwt-secret-key-aqui"
-   NEXTAUTH_URL="http://localhost:3000"
-   ```
-
-4. **Configura la base de datos:**
-   ```bash
-   npx prisma generate
-   npx prisma db push
-   npx prisma db seed
-   ```
-
-5. **Ejecuta el servidor de desarrollo:**
-   ```bash
-   npm run dev
-   ```
-
-6. **Abre la aplicación:**
-   http://localhost:3000
-
-### Comandos Disponibles
+## Instalación local
 
 ```bash
-# Desarrollo
-npm run dev          # Servidor de desarrollo
-npm run build        # Build de producción
-npm run start        # Servidor de producción
-
-# Base de datos
-npx prisma generate  # Genera cliente Prisma
-npx prisma db push   # Sincroniza schema con DB
-npx prisma studio    # Abre Prisma Studio
-
-# Linting
-npm run lint         # Ejecuta ESLint
+git clone <url-del-repositorio>
+cd rutaSeguraAdministrador
+npm install
 ```
 
-## 📁 Estructura del Proyecto
+### Variables de entorno
+
+Crea `.env.local` en la raíz (no commitear). Prisma lee la URL desde `prisma.config.ts`:
+
+```env
+POSTGRES_URL="postgresql://usuario:password@localhost:5432/rutasegura"
+# Alternativa equivalente:
+# DATABASE_URL="postgresql://..."
+
+# Opcional: si el front llama a otro host (vacío = rutas relativas /api/...)
+NEXT_PUBLIC_API_URL=
+
+# Opcional: envío push real (sin esto se registran logs y se simula en consola)
+FCM_SERVER_KEY=
+```
+
+### Base de datos
+
+```bash
+npx prisma generate
+npx prisma db push
+npx prisma db seed
+```
+
+El seed crea datos de ejemplo y **borra tablas relacionadas** antes de insertar. Credenciales de prueba:
+
+| Rol | Email | Contraseña |
+|-----|--------|------------|
+| Admin | `admin@rutasegura.com` | `admin123` |
+| Transportista | `juan.perez@example.com` | `driver123` |
+
+### Desarrollo
+
+```bash
+npm run dev
+```
+
+Abre [http://localhost:3000](http://localhost:3000). Tras login, la API Key queda en el contexto de sesión del navegador (`AuthContext`).
+
+### Otros comandos
+
+```bash
+npm run build    # prisma generate && next build --webpack
+npm run start    # producción
+npm run lint
+npx prisma studio
+```
+
+## Autenticación
+
+1. `POST /api/v1/auth/login` → `{ user, apiKey }`.
+2. Peticiones protegidas: header `X-API-Key: <clave>` o `Authorization: Bearer <clave>`.
+3. El panel guarda usuario + apiKey en `localStorage` (`rutasegura_admin_user`).
+
+Roles (`Usuario.rol`): `ADMIN` | `TRANSPORTISTA`. Los transportistas ven solo sus pasajeros/rutas/viajes donde aplica el filtro en API.
+
+## API — resumen de rutas
+
+Prefijo: `/api/v1`. Especificación completa en [`docs/documentacion_endpoints.md`](./docs/documentacion_endpoints.md).
+
+| Módulo | Rutas |
+|--------|--------|
+| Auth | `POST login`, `register`, `forgot-password`, `reset-password`, `change-password` · `GET me` · `PATCH profile` |
+| Pasajeros | `GET\|POST /pasajeros` · `GET\|PUT\|DELETE\|PATCH /pasajeros/:id` |
+| Rutas | `GET\|POST /rutas` · `GET\|PUT\|DELETE /rutas/:id` · paradas `GET\|POST\|PUT`, `DELETE .../paradas/:paradaId` |
+| Viajes | `GET\|POST /viajes` · `GET\|PUT\|DELETE /viajes/:id` · `POST /viajes/:id/location` |
+| Transportistas | `GET /transportistas` |
+| Notificaciones | `GET /notificaciones` · `GET /notificaciones/count` |
+| Panel | `GET /dashboard/resumen` · `GET /reportes/operacion?dias=7` |
+
+### Probar GPS sin app móvil
+
+1. Inicia un viaje (`PUT /viajes/:id` con `estado: "EN_CURSO"` o botón **Iniciar** en `/trips`).
+2. Envía ubicación cercana a una parada (domicilio del pasajero en ruta `IDA`):
+
+```http
+POST /api/v1/viajes/{viajeId}/location
+X-API-Key: <apiKey>
+Content-Type: application/json
+
+{ "lat": -33.4372, "lng": -70.6072 }
+```
+
+Respuesta incluye distancia a la parada, notificaciones nuevas y posible cierre automático del viaje.
+
+## Estructura del repositorio
 
 ```
 src/
-├── app/                    # Next.js App Router
-│   ├── api/               # Endpoints API (REST)
-│   │   └── v1/
-│   │       ├── auth/      # Autenticación
-│   │       ├── pasajeros/ # Gestión de pasajeros
-│   │       ├── rutas/     # Gestión de rutas
-│   │       └── transportistas/ # Gestión de conductores
-│   └── [pages]/           # Páginas de la aplicación
-├── components/            # Componentes reutilizables
-│   ├── passengers/        # Componentes de pasajeros
-│   ├── routes/           # Componentes de rutas
-│   └── AuthGate.tsx     # Protección de rutas
-├── contexts/             # Contextos de React
-│   └── AuthContext.tsx  # Contexto de autenticación
-├── data/                 # Datos mock y utilities
-└── lib/                  # Librerías y configuraciones
-    ├── schemas/          # Esquemas Zod para validación
-    ├── api.ts           # Cliente HTTP
-    ├── auth.ts          # Utilidades de autenticación
-    ├── cors.ts          # Configuración CORS
-    ├── logger.ts        # Sistema de logging
-    └── prisma.ts        # Instancia de Prisma Client
+├── app/                 # Páginas (App Router) + API routes
+│   ├── api/v1/          # REST
+│   ├── trips/           # Viajes (UI)
+│   └── ...
+├── components/          # Layout, forms, PageHeader, StatCard, AuthGate...
+├── contexts/            # AuthContext
+├── lib/                 # prisma, auth, schemas, geo, notificaciones, procesarUbicacionViaje
+├── theme/               # Tokens Ant Design (appTheme.ts)
+└── proxy.ts             # Guardia mínima en /api/v1/*
 
 prisma/
-├── schema.prisma        # Schema de la base de datos
-└── seed.ts              # Datos de prueba
+├── schema.prisma
+└── seed.ts
 
-docs/                    # Documentación del proyecto
-├── plan-desarrollo-app-transporte.md
-├── estado-proyecto.md
-├── arquitectura-backend.md
-├── diagrama-er.md
-└── wireframes-web-admin.md
+docs/                    # Plan, ER, endpoints, wireframes
 ```
 
-## 🌐 API Endpoints
+Alias TypeScript: `@/*` → `src/*`.
 
-### Autenticación
-- `POST /api/v1/auth/login` - Iniciar sesión
-- `POST /api/v1/auth/register` - Registrar usuario
-- `POST /api/v1/auth/forgot-password` - Recuperar contraseña
-- `POST /api/v1/auth/reset-password` - Restablecer contraseña
-- `GET /api/v1/auth/me` - Obtener perfil actual
-- `PUT /api/v1/auth/profile` - Actualizar perfil
-- `PUT /api/v1/auth/change-password` - Cambiar contraseña
+## UI y experiencia de uso
 
-### Gestión de Datos
-- `GET|POST /api/v1/pasajeros` - Listar/Crear pasajeros
-- `GET|PUT|DELETE /api/v1/pasajeros/[id]` - Gestionar pasajero
-- `GET|POST /api/v1/rutas` - Listar/Crear rutas
-- `GET|PUT|DELETE /api/v1/rutas/[id]` - Gestionar ruta
-- `GET|POST /api/v1/rutas/[id]/paradas` - Gestionar paradas
-- `GET /api/v1/transportistas` - Listar transportistas
+- Tema global: `src/theme/appTheme.ts` + `AppProviders` (locale `es_ES`, contenedor `App` de antd).
+- Layout principal: `MainLayout` (menú agrupado, responsive, breadcrumbs).
+- Componentes compartidos: `PageHeader`, `StatCard`, `PageLoading`, `EmptyState`.
+- Textos de interfaz y API en **español**.
 
-## 📄 Documentación Adicional
+## Seguridad
 
-- [📋 Plan de Desarrollo Completo](./docs/plan-desarrollo-app-transporte.md)
-- [📊 Estado Actual del Proyecto](./docs/estado-proyecto.md)
-- [🏗️ Arquitectura del Backend](./docs/arquitectura-backend.md)
-- [🔗 Diagrama Entidad-Relación](./docs/diagrama-er.md)
-- [🎨 Wireframes del Panel Web](./docs/wireframes-web-admin.md)
-- [📝 Documentación de Endpoints](./docs/documentacion_endpoints.md)
+- No subir `.env`, `.env.local` ni API keys reales al repositorio.
+- `forgot-password` no envía correo aún; en desarrollo puede incluir `_dev_token` en la respuesta.
+- Contraseñas y API keys en logs de petición deben permanecer enmascaradas donde use `registrarLog`.
 
-## 🤝 Contribución
+## Contribuir y soporte
 
-1. Fork el proyecto
-2. Crea una rama para tu feature (`git checkout -b feature/amazing-feature`)
-3. Commit tus cambios (`git commit -m 'Add amazing feature'`)
-4. Push a la rama (`git push origin feature/amazing-feature`)
-5. Abre un Pull Request
+1. Rama feature → cambios acotados → `npm run lint` y `npm run build`.
+2. Tras cambiar `prisma/schema.prisma`: `npx prisma generate` y `db push` en tu entorno.
+3. Issues: descripción, pasos, entorno (Node, SO, navegador).
 
-## 📝 Licencia
+## Licencia
 
-Este proyecto está bajo licencia MIT. Ver el archivo `LICENSE` para más detalles.
-
-## 🐛 Reportar Issues
-
-Si encuentras algún bug o tienes sugerencias, por favor abre un issue en el repositorio con:
-- Descripción detallada del problema
-- Pasos para reproducir
-- Capturas de pantalla (si aplica)
-- Entorno (navegador, SO, versión de Node)
+MIT — ver `LICENSE` si existe en el repo.
 
 ---
 
-**Desarrollado con ❤️ en 2026**  
-*Sistema de gestión de transporte particular con notificaciones inteligentes*
+*RutaSegura — administración de transporte con alertas por proximidad GPS.*
