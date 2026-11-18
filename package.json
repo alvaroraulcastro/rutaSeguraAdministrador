@@ -29,7 +29,21 @@
     "zod": "^4.6.7"
   },
   "overrides": {
-    "picomatch": "^4.0.7"
+    "picomatch": "4.0.7",
+    "tinyglobby": {
+      "picomatch": "4.0.7",
+      "fdir": {
+        "picomatch": "4.0.7"
+      }
+    },
+    "micromatch": {
+      "picomatch": "4.0.7"
+    },
+    "fast-glob": {
+      "micromatch": {
+        "picomatch": "4.0.7"
+      }
+    }
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.5",
