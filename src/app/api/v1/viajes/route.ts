@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 import { crearViajeSchema } from '@/lib/schemas/viaje';
-import { validarApiKey } from '@/lib/auth';
+import { getApiKeyFromRequest, validarApiKey } from '@/lib/auth';
 import { getCorsHeaders } from '@/lib/cors';
 
 export const dynamic = 'force-dynamic';
@@ -15,8 +15,7 @@ export async function OPTIONS(request: Request) {
 export async function GET(request: Request) {
   const corsHeaders = getCorsHeaders(request);
   try {
-    const apiKey = request.headers.get('X-API-Key');
-    const usuario = await validarApiKey(apiKey);
+    const usuario = await validarApiKey(getApiKeyFromRequest(request));
 
     if (!usuario) {
       return NextResponse.json({ error: 'API Key inválida' }, { status: 401, headers: corsHeaders });
@@ -50,8 +49,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   const corsHeaders = getCorsHeaders(request);
   try {
-    const apiKey = request.headers.get('X-API-Key');
-    const usuario = await validarApiKey(apiKey);
+    const usuario = await validarApiKey(getApiKeyFromRequest(request));
 
     if (!usuario) {
       return NextResponse.json({ error: 'API Key inválida' }, { status: 401, headers: corsHeaders });
@@ -59,6 +57,17 @@ export async function POST(request: Request) {
 
     const data = await request.json();
     const validatedData = crearViajeSchema.parse(data);
+
+    const ruta = await prisma.ruta.findUnique({
+      where: { id: validatedData.rutaId },
+      select: { transportistaId: true },
+    });
+    if (!ruta) {
+      return NextResponse.json({ error: 'Ruta no encontrada' }, { status: 404, headers: corsHeaders });
+    }
+    if (usuario.rol === 'TRANSPORTISTA' && ruta.transportistaId !== usuario.id) {
+      return NextResponse.json({ error: 'No autorizado para esta ruta' }, { status: 403, headers: corsHeaders });
+    }
 
     const nuevoViaje = await prisma.viaje.create({
       data: {

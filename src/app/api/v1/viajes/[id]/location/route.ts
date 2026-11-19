@@ -4,6 +4,8 @@ import { locationSchema } from '@/lib/schemas/location';
 import { getApiKeyFromRequest, validarApiKey } from '@/lib/auth';
 import { getCorsHeaders } from '@/lib/cors';
 import { procesarUbicacionViaje } from '@/lib/procesarUbicacionViaje';
+import { obtenerViajeSiAutorizado } from '@/lib/viajeAutorizacion';
+import { ubicacionPermitida } from '@/lib/rateLimitUbicacion';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -16,11 +18,25 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
   const corsHeaders = getCorsHeaders(request);
   try {
     const { id: viajeId } = await context.params;
-    const apiKey = getApiKeyFromRequest(request);
-    const usuario = await validarApiKey(apiKey);
+    const usuario = await validarApiKey(getApiKeyFromRequest(request));
 
     if (!usuario) {
       return NextResponse.json({ error: 'API Key inválida' }, { status: 401, headers: corsHeaders });
+    }
+
+    const auth = await obtenerViajeSiAutorizado(viajeId, usuario);
+    if (auth.status === 'not_found') {
+      return NextResponse.json({ error: 'Viaje no encontrado' }, { status: 404, headers: corsHeaders });
+    }
+    if (auth.status === 'forbidden') {
+      return NextResponse.json({ error: 'No autorizado para este viaje' }, { status: 403, headers: corsHeaders });
+    }
+
+    if (!ubicacionPermitida(viajeId)) {
+      return NextResponse.json(
+        { error: 'Demasiadas actualizaciones GPS; espera unos segundos' },
+        { status: 429, headers: corsHeaders }
+      );
     }
 
     const data = await request.json();

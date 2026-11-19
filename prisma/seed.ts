@@ -11,20 +11,30 @@ const prisma = new PrismaClient({ adapter })
 async function main() {
   console.log('Iniciando seeding...')
 
+  const destructivo = process.env.PRISMA_SEED_DESTRUCTIVE !== 'false'
+
   // 0. Preparar passwords
   const passwordAdmin = await bcrypt.hash('admin123', 10);
   const passwordDriver1 = await bcrypt.hash('driver123', 10);
   const passwordDriver2 = await bcrypt.hash('driver123', 10);
 
-  // 1. Limpiar la base de datos
-  await prisma.logPeticion.deleteMany()
-  await prisma.notificacionLog.deleteMany()
-  await prisma.viaje.deleteMany()
-  await prisma.parada.deleteMany()
-  await prisma.ruta.deleteMany()
-  await prisma.contactoNotificacion.deleteMany()
-  await prisma.pasajero.deleteMany()
-  await prisma.usuario.deleteMany()
+  // 1. Limpiar la base de datos (omitir con PRISMA_SEED_DESTRUCTIVE=false)
+  if (destructivo) {
+    await prisma.logPeticion.deleteMany()
+    await prisma.notificacionLog.deleteMany()
+    await prisma.viaje.deleteMany()
+    await prisma.parada.deleteMany()
+    await prisma.ruta.deleteMany()
+    await prisma.contactoNotificacion.deleteMany()
+    await prisma.pasajero.deleteMany()
+    await prisma.usuario.deleteMany()
+  } else {
+    const existente = await prisma.usuario.findFirst({ where: { email: 'admin@rutasegura.com' } })
+    if (existente) {
+      console.log('Seed omitido: ya hay datos y PRISMA_SEED_DESTRUCTIVE=false')
+      return
+    }
+  }
 
   // 2. Crear Usuarios (Transportistas y Admin)
   const admin = await prisma.usuario.create({

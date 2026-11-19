@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Card, Col, Row, Table, Tag, Alert } from "antd";
+import { Card, Col, Row, Table, Tag, Alert, Typography } from "antd";
+import dynamic from "next/dynamic";
 import PageHeader from "@/components/PageHeader";
 import StatCard from "@/components/StatCard";
 import PageLoading from "@/components/PageLoading";
@@ -13,6 +14,11 @@ import {
 } from "@ant-design/icons";
 import { useAuth } from "@/contexts/AuthContext";
 import { getApiUrl } from "@/lib/api";
+import type { PosicionViaje } from "@/components/dashboard/DashboardViajesMap";
+
+const DashboardViajesMap = dynamic(() => import("@/components/dashboard/DashboardViajesMap"), { ssr: false });
+
+const { Text } = Typography;
 
 interface ResumenDashboard {
   pasajerosTotal: number;
@@ -28,6 +34,7 @@ interface ResumenDashboard {
     ultimaParada: string;
     ultimaUbicacionEn: string | null;
   }[];
+  posicionesEnCurso?: PosicionViaje[];
 }
 
 const columns = [
@@ -99,6 +106,8 @@ export default function DashboardClient() {
     return <Alert type="error" message={error ?? "Sin datos"} showIcon />;
   }
 
+  const posiciones = data.posicionesEnCurso ?? [];
+
   return (
     <>
       <PageHeader
@@ -132,6 +141,15 @@ export default function DashboardClient() {
           />
         </Col>
       </Row>
+
+      {posiciones.length > 0 && (
+        <Card title="Última posición GPS · viajes en curso" className="page-section" style={{ marginTop: 20 }}>
+          <DashboardViajesMap puntos={posiciones} />
+          <Text type="secondary" style={{ display: "block", marginTop: 8, fontSize: 12 }}>
+            Solo viajes con estado EN_CURSO y al menos una coordenada reportada.
+          </Text>
+        </Card>
+      )}
 
       <Card title={`Viajes de hoy · ${data.rutasTotal} rutas activas`} className="page-section" style={{ marginTop: 20 }}>
         <Table

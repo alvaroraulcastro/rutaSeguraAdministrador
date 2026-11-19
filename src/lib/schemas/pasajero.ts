@@ -4,6 +4,7 @@ export const contactoNotificacionSchema = z.object({
   nombre: z.string().min(3),
   telefono: z.string(),
   email: z.string().email().optional(),
+  fcmToken: z.string().min(10).optional().nullable(),
   canal: z.enum(['PUSH', 'SMS', 'WHATSAPP']).default('PUSH'),
 });
 

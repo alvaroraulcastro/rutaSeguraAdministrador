@@ -10,9 +10,10 @@ Monorepo **Next.js** que incluye el **panel web** para operadores/administradore
 | API viajes + ubicación GPS | Operativo (MVP) | Haversine, logs en `NotificacionLog`; FCM opcional |
 | Panel web | Operativo | Pasajeros/rutas con API; dashboard, reportes y viajes con datos reales |
 | App transportista (Expo) | Pendiente | Repo aparte; consume la misma API |
-| Push / SMS reales | Parcial | `FCM_SERVER_KEY` + Twilio aún no integrados en producción |
+| Push / SMS reales | Parcial | FCM legacy con `FCM_SERVER_KEY`; HTTP v1 y Twilio pendientes |
+| Health / piloto | Operativo | `GET /api/v1/health`, [`docs/runbook-mvp.md`](./docs/runbook-mvp.md) |
 
-Documentación ampliada en [`docs/`](./docs/). Contrato HTTP detallado: [`docs/documentacion_endpoints.md`](./docs/documentacion_endpoints.md).
+Documentación ampliada en [`docs/`](./docs/). Contrato HTTP: [`docs/documentacion_endpoints.md`](./docs/documentacion_endpoints.md). **Plan de desarrollo y mejoras:** [`docs/plan-desarrollo-mejoras.md`](./docs/plan-desarrollo-mejoras.md).
 
 ## Stack
 

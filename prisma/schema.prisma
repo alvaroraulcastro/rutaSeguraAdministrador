@@ -95,6 +95,8 @@ model Pasajero {
   notificaciones         NotificacionLog[]
   createdAt              DateTime               @default(now())
   updatedAt              DateTime               @updatedAt
+
+  @@index([transportistaId])
 }
 
 model ContactoNotificacion {
@@ -102,6 +104,7 @@ model ContactoNotificacion {
   nombre     String
   telefono   String
   email      String?
+  fcmToken   String?
   canal      CanalNotificacion @default(PUSH)
   pasajeroId String
   pasajero   Pasajero          @relation(fields: [pasajeroId], references: [id], onDelete: Cascade)
@@ -152,6 +155,8 @@ model Viaje {
   notificaciones     NotificacionLog[]
   createdAt          DateTime          @default(now())
   updatedAt          DateTime          @updatedAt
+
+  @@index([estado, fecha])
 }
 
 model NotificacionLog {
@@ -166,4 +171,6 @@ model NotificacionLog {
   pasajeroId   String
   pasajero     Pasajero          @relation(fields: [pasajeroId], references: [id])
   enviadoEn    DateTime          @default(now())
+
+  @@index([enviadoEn])
 }

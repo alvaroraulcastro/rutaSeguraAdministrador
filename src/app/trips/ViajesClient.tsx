@@ -1,10 +1,23 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Table, Card, Typography, Tag, Select, Space, Button, Alert, Tooltip } from "antd";
+import {
+  Table,
+  Card,
+  Typography,
+  Tag,
+  Select,
+  Space,
+  Button,
+  Alert,
+  Tooltip,
+  Modal,
+  App,
+  Input,
+} from "antd";
 import PageHeader from "@/components/PageHeader";
 import PageLoading from "@/components/PageLoading";
-import { ReloadOutlined, PlayCircleOutlined, CheckCircleOutlined } from "@ant-design/icons";
+import { ReloadOutlined, PlayCircleOutlined, CheckCircleOutlined, PlusOutlined } from "@ant-design/icons";
 import { useAuth } from "@/contexts/AuthContext";
 import { getApiUrl } from "@/lib/api";
 
@@ -35,13 +48,28 @@ const estadoTag: Record<EstadoViaje, { color: string; label: string }> = {
   CANCELADO: { color: "error", label: "Cancelado" },
 };
 
+interface RutaOpcion {
+  id: string;
+  nombre: string;
+}
+
 export default function ViajesClient() {
+  const { message } = App.useApp();
   const { user } = useAuth();
   const [viajes, setViajes] = useState<ViajeApi[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filtroEstado, setFiltroEstado] = useState<EstadoViaje | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [modalAbierto, setModalAbierto] = useState(false);
+  const [rutas, setRutas] = useState<RutaOpcion[]>([]);
+  const [rutaId, setRutaId] = useState<string | null>(null);
+  const [fechaViaje, setFechaViaje] = useState(() => {
+    const d = new Date();
+    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+    return d.toISOString().slice(0, 16);
+  });
+  const [creando, setCreando] = useState(false);
   const apiKey = user?.apiKey;
 
   const cargar = async () => {
@@ -69,6 +97,40 @@ export default function ViajesClient() {
     return () => cancelAnimationFrame(frame);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- recargar cuando cambia la apiKey
   }, [apiKey]);
+
+  const abrirCrear = async () => {
+    if (!apiKey) return;
+    setModalAbierto(true);
+    try {
+      const res = await fetch(getApiUrl("/api/v1/rutas"), { headers: { "X-API-Key": apiKey } });
+      if (!res.ok) throw new Error("No se pudieron cargar las rutas");
+      const lista: RutaOpcion[] = await res.json();
+      setRutas(lista);
+      setRutaId(lista[0]?.id ?? null);
+    } catch (e) {
+      message.error(e instanceof Error ? e.message : "Error al cargar rutas");
+    }
+  };
+
+  const crearViaje = async () => {
+    if (!apiKey || !rutaId) return;
+    setCreando(true);
+    try {
+      const res = await fetch(getApiUrl("/api/v1/viajes"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-API-Key": apiKey },
+        body: JSON.stringify({ rutaId, fecha: new Date(fechaViaje).toISOString() }),
+      });
+      if (!res.ok) throw new Error("No se pudo crear el viaje");
+      message.success("Viaje creado");
+      setModalAbierto(false);
+      await cargar();
+    } catch (e) {
+      message.error(e instanceof Error ? e.message : "Error al crear");
+    } finally {
+      setCreando(false);
+    }
+  };
 
   const cambiarEstado = async (id: string, estado: EstadoViaje) => {
     if (!apiKey) return;
@@ -199,9 +261,46 @@ export default function ViajesClient() {
             <Button icon={<ReloadOutlined />} onClick={() => void cargar()} loading={loading}>
               Actualizar
             </Button>
+            <Button type="primary" icon={<PlusOutlined />} onClick={() => void abrirCrear()}>
+              Nuevo viaje
+            </Button>
           </>
         }
       />
+
+      <Modal
+        title="Programar viaje"
+        open={modalAbierto}
+        onCancel={() => setModalAbierto(false)}
+        onOk={() => void crearViaje()}
+        confirmLoading={creando}
+        okText="Crear"
+        cancelText="Cancelar"
+        okButtonProps={{ disabled: !rutaId }}
+      >
+        <Space direction="vertical" style={{ width: "100%" }} size="middle">
+          <div>
+            <Text type="secondary">Ruta</Text>
+            <Select
+              style={{ width: "100%", marginTop: 4 }}
+              placeholder="Selecciona ruta"
+              value={rutaId}
+              onChange={setRutaId}
+              options={rutas.map((r) => ({ value: r.id, label: r.nombre }))}
+            />
+          </div>
+          <div>
+            <Text type="secondary">Fecha y hora</Text>
+            <Input
+              type="datetime-local"
+              style={{ width: "100%", marginTop: 4 }}
+              value={fechaViaje}
+              onChange={(e) => setFechaViaje(e.target.value)}
+              aria-label="Fecha y hora del viaje"
+            />
+          </div>
+        </Space>
+      </Modal>
 
       {error && <Alert type="error" message={error} showIcon style={{ marginBottom: 16 }} />}
 

@@ -92,7 +92,31 @@ export default function ReportsClient() {
     fetchReport();
   }, [user?.apiKey, period]);
 
+  const exportarCsv = () => {
+    if (!data?.historial.length) {
+      message.warning("No hay datos para exportar");
+      return;
+    }
+    const encabezado = ["fecha", "viajes", "completados", "cancelados", "cumplimiento_pct"];
+    const filas = data.historial.map((f) =>
+      [f.date, f.totalRoutes, f.completed, f.incidents, f.punctuality].join(",")
+    );
+    const csv = [encabezado.join(","), ...filas].join("\n");
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `reporte-operacion-${period}d.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    message.success("CSV descargado");
+  };
+
   const exportPlaceholder = (formato: string) => {
+    if (formato === "Excel") {
+      exportarCsv();
+      return;
+    }
     message.info(`Exportación ${formato} pendiente de implementación`);
   };
 

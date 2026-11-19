@@ -26,3 +26,9 @@ ALTER TABLE "NotificacionLog" ADD COLUMN IF NOT EXISTS "destinatario" TEXT;
 
 UPDATE "NotificacionLog" SET "tipo" = 'LEGACY' WHERE "tipo" IS NULL;
 UPDATE "NotificacionLog" SET "estado" = 'ENVIADO' WHERE "estado" IS NULL;
+
+ALTER TABLE "ContactoNotificacion" ADD COLUMN IF NOT EXISTS "fcmToken" TEXT;
+
+CREATE INDEX IF NOT EXISTS "Viaje_estado_fecha_idx" ON "Viaje" ("estado", "fecha");
+CREATE INDEX IF NOT EXISTS "Pasajero_transportistaId_idx" ON "Pasajero" ("transportistaId");
+CREATE INDEX IF NOT EXISTS "NotificacionLog_enviadoEn_idx" ON "NotificacionLog" ("enviadoEn");

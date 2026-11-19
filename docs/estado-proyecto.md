@@ -1,5 +1,7 @@
 # 📊 Estado del Proyecto - RutaSegura Administrador
 
+> **Documento histórico (marzo 2026):** puede estar desactualizado. Fuentes de verdad: [`README.md`](../README.md), [`AGENTS.md`](../AGENTS.md), [`plan-desarrollo-mejoras.md`](./plan-desarrollo-mejoras.md) y [`documentacion_endpoints.md`](./documentacion_endpoints.md).
+
 ## 📋 Resumen del Proyecto
 
 **RutaSegura** es una plataforma de gestión de transporte particular de personas que consta de:
