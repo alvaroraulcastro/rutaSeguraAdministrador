@@ -46,3 +46,4 @@ Síntoma: 500 en Prisma (`column does not exist`).
 | admin@rutasegura.com | admin123 |
 | maria.gonzalez@example.com | driver123 |
 | juan.perez@example.com | driver123 |
+| carlos.vega@example.com | driver123 |
