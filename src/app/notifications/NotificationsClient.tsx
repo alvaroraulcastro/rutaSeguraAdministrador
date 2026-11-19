@@ -25,8 +25,9 @@ import type { ColumnsType } from "antd/es/table";
 import { useAuth } from "@/contexts/AuthContext";
 import { getApiUrl } from "@/lib/api";
 import EmptyState from "@/components/EmptyState";
+import PageHeader from "@/components/PageHeader";
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 interface NotificacionApi {
   id: string;
@@ -194,10 +195,10 @@ export default function NotificationsClient() {
 
   return (
     <>
-      <Title level={2}>Log de Notificaciones Push</Title>
-      <Text type="secondary" style={{ display: "block", marginBottom: 24 }}>
-        Historial de notificaciones FCM enviadas a pasajeros y contactos de emergencia.
-      </Text>
+      <PageHeader
+        title="Notificaciones"
+        description="Historial de alertas enviadas a contactos (push, SMS o WhatsApp según configuración)."
+      />
 
       <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
         <Col xs={24} sm={8}>

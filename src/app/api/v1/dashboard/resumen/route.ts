@@ -29,13 +29,31 @@ export async function GET(request: Request) {
     const esTransportista = usuario.rol === 'TRANSPORTISTA';
     const filtroRuta = esTransportista ? { transportistaId: usuario.id } : {};
 
-    const [pasajerosTotal, rutasTotal, viajesActivos, viajesHoy, notificacionesHoy] = await Promise.all([
+    const [pasajerosTotal, rutasTotal, viajesActivos, viajesEnCursoGps, viajesHoy, notificacionesHoy] =
+      await Promise.all([
       prisma.pasajero.count({
         where: esTransportista ? { transportistaId: usuario.id } : undefined,
       }),
       prisma.ruta.count({ where: filtroRuta }),
       prisma.viaje.count({
         where: { estado: 'EN_CURSO', ruta: filtroRuta },
+      }),
+      prisma.viaje.findMany({
+        where: {
+          estado: 'EN_CURSO',
+          ultimaLat: { not: null },
+          ultimaLng: { not: null },
+          ruta: filtroRuta,
+        },
+        select: {
+          id: true,
+          ultimaLat: true,
+          ultimaLng: true,
+          ultimaUbicacionEn: true,
+          paradaActualOrden: true,
+          ruta: { select: { nombre: true, transportista: { select: { nombre: true } } } },
+        },
+        take: 50,
       }),
       prisma.viaje.findMany({
         where: {
@@ -93,6 +111,16 @@ export async function GET(request: Request) {
       };
     });
 
+    const posicionesEnCurso = viajesEnCursoGps.map((v) => ({
+      id: v.id,
+      lat: v.ultimaLat as number,
+      lng: v.ultimaLng as number,
+      ruta: v.ruta.nombre,
+      transportista: v.ruta.transportista.nombre,
+      paradaActualOrden: v.paradaActualOrden,
+      ultimaUbicacionEn: v.ultimaUbicacionEn,
+    }));
+
     return NextResponse.json(
       {
         pasajerosTotal,
@@ -101,6 +129,7 @@ export async function GET(request: Request) {
         notificacionesHoy,
         cumplimiento,
         viajesEnTabla,
+        posicionesEnCurso,
       },
       { headers: corsHeaders }
     );

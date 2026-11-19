@@ -4,6 +4,7 @@ import type { NextRequest } from 'next/server';
 const publicRoutes = [
   '/api/v1/auth/login',
   '/api/v1/auth/register',
+  '/api/v1/health',
 ];
 
 function hasApiKeyOrBearer(request: NextRequest): boolean {

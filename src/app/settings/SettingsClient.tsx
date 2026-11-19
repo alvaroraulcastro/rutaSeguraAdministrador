@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   Form,
   Input,
@@ -15,6 +15,8 @@ import {
   Row,
   Col,
   Tabs,
+  Alert,
+  Spin,
 } from "antd";
 import {
   SaveOutlined,
@@ -23,17 +25,45 @@ import {
   BellOutlined,
   ApiOutlined,
 } from "@ant-design/icons";
-const { Title, Text } = Typography;
+import PageHeader from "@/components/PageHeader";
+import { useAuth } from "@/contexts/AuthContext";
+import { getApiUrl } from "@/lib/api";
+
+const { Text } = Typography;
 const { Option } = Select;
+
+interface ConfigOperativa {
+  gps: { enCaminoMetros: number; enPuertaMetros: number; ubicacionIntervaloMinimoSegundos: number };
+  notificaciones: { fcmConfigurado: boolean };
+}
 
 export default function SettingsClient() {
   const [form] = Form.useForm();
+  const { user } = useAuth();
+  const [operativa, setOperativa] = useState<ConfigOperativa | null>(null);
+  const [cargandoOperativa, setCargandoOperativa] = useState(true);
+
+  useEffect(() => {
+    const load = async () => {
+      if (!user?.apiKey) return;
+      try {
+        const res = await fetch(getApiUrl("/api/v1/config/operativa"), {
+          headers: { "X-API-Key": user.apiKey },
+        });
+        if (res.ok) setOperativa(await res.json());
+      } finally {
+        setCargandoOperativa(false);
+      }
+    };
+    void load();
+  }, [user?.apiKey]);
 
   const onFinish = (values: Record<string, unknown>) => {
     console.log("Settings updated:", values);
     notification.success({
-      message: "Configuración guardada",
-      description: "Los cambios se han aplicado correctamente.",
+      message: "Preferencias guardadas en esta sesión",
+      description:
+        "Los umbrales GPS y FCM se configuran con variables de entorno en el servidor (ver documentación).",
     });
   };
 
@@ -89,48 +119,42 @@ export default function SettingsClient() {
       ),
       children: (
         <>
+          {cargandoOperativa ? (
+            <Spin />
+          ) : (
+            <Alert
+              type={operativa?.notificaciones.fcmConfigurado ? "success" : "warning"}
+              showIcon
+              style={{ marginBottom: 16 }}
+              message={
+                operativa?.notificaciones.fcmConfigurado
+                  ? "FCM_SERVER_KEY configurada en el servidor"
+                  : "Sin FCM: las alertas se registran en el panel pero no llegan al dispositivo"
+              }
+            />
+          )}
           <Divider>Alertas automáticas</Divider>
           <Space direction="vertical" style={{ width: "100%", marginBottom: 24 }} size="middle">
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <div>
-                <Text strong>Proximidad (1 minuto)</Text>
+                <Text strong>Proximidad (en camino)</Text>
                 <br />
-                <Text type="secondary">Avisar cuando el transporte esté a ~1 min del domicilio.</Text>
+                <Text type="secondary">
+                  Umbrales actuales en servidor: {operativa?.gps.enCaminoMetros ?? "—"} m (en camino),{" "}
+                  {operativa?.gps.enPuertaMetros ?? "—"} m (en puerta).
+                </Text>
               </div>
-              <Switch defaultChecked aria-label="Alerta de proximidad" />
+              <Switch defaultChecked disabled aria-label="Alerta de proximidad" />
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <div>
                 <Text strong>Llegada en puerta</Text>
                 <br />
-                <Text type="secondary">Avisar cuando el transporte haya llegado al domicilio.</Text>
+                <Text type="secondary">Variables: GPS_UMBRAL_EN_CAMINO_METROS, GPS_UMBRAL_EN_PUERTA_METROS.</Text>
               </div>
-              <Switch defaultChecked aria-label="Alerta de llegada en puerta" />
-            </div>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <div>
-                <Text strong>Llegada a destino</Text>
-                <br />
-                <Text type="secondary">Avisar cuando el pasajero llegue al destino (colegio, trabajo).</Text>
-              </div>
-              <Switch defaultChecked aria-label="Alerta de llegada a destino" />
-            </div>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <div>
-                <Text strong>WhatsApp como canal preferente</Text>
-                <br />
-                <Text type="secondary">Usar WhatsApp cuando esté disponible para el contacto.</Text>
-              </div>
-              <Switch aria-label="WhatsApp como canal preferente" />
+              <Switch defaultChecked disabled aria-label="Alerta de llegada en puerta" />
             </div>
           </Space>
-          <Form onFinish={onFinish}>
-            <Form.Item>
-              <Button type="primary" htmlType="submit" icon={<SaveOutlined />}>
-                Guardar cambios
-              </Button>
-            </Form.Item>
-          </Form>
         </>
       ),
     },
@@ -145,28 +169,16 @@ export default function SettingsClient() {
         <>
           <Divider>Tracking GPS</Divider>
           <Form layout="vertical" onFinish={onFinish}>
-            <Form.Item
-              name="gpsInterval"
-              label="Intervalo de actualización GPS (segundos)"
-              initialValue={30}
-            >
-              <Select aria-label="Intervalo GPS">
-                <Option value={10}>10 segundos</Option>
-                <Option value={30}>30 segundos</Option>
-                <Option value={60}>60 segundos</Option>
-              </Select>
+            <Form.Item label="Intervalo mínimo entre POST location (servidor)">
+              <Text strong>
+                {operativa?.gps.ubicacionIntervaloMinimoSegundos ?? 2} segundos (fijo en servidor)
+              </Text>
             </Form.Item>
-            <Form.Item>
-              <Button type="primary" htmlType="submit" icon={<SaveOutlined />}>
-                Guardar cambios
-              </Button>
-            </Form.Item>
+            <Text type="secondary">
+              La app transportista debería enviar ubicación cada 10–15 s; el API rechaza ráfagas más rápidas que 2 s por
+              viaje.
+            </Text>
           </Form>
-
-          <Divider>API Keys</Divider>
-          <Space direction="vertical" style={{ width: "100%" }} size="middle">
-            <Text type="secondary">Gestiona las claves de API para integraciones externas.</Text>
-          </Space>
         </>
       ),
     },
@@ -180,11 +192,11 @@ export default function SettingsClient() {
       children: (
         <>
           <Text type="secondary" style={{ display: "block", marginBottom: 16 }}>
-            Claves y configuraciones para servicios externos.
+            Claves y configuraciones para servicios externos (solo lectura en panel; editar en Vercel / .env.local).
           </Text>
           <Form layout="vertical">
             <Form.Item label="Google Maps API Key">
-              <Input.Password placeholder="••••••••••••••••" disabled aria-label="Google Maps API Key" />
+              <Input.Password placeholder="No configurada" disabled aria-label="Google Maps API Key" />
             </Form.Item>
             <Form.Item label="Twilio (SMS / WhatsApp)">
               <Row gutter={8}>
@@ -197,11 +209,12 @@ export default function SettingsClient() {
               </Row>
             </Form.Item>
             <Form.Item label="Firebase (FCM - Push)">
-              <Input.Password placeholder="Server key o credenciales" disabled aria-label="Firebase Server Key" />
+              <Input.Password
+                placeholder={operativa?.notificaciones.fcmConfigurado ? "Configurada en servidor" : "Sin configurar"}
+                disabled
+                aria-label="Firebase Server Key"
+              />
             </Form.Item>
-            <Button type="primary" icon={<SaveOutlined />} disabled>
-              Guardar (solo lectura en maqueta)
-            </Button>
           </Form>
         </>
       ),
@@ -210,10 +223,10 @@ export default function SettingsClient() {
 
   return (
     <>
-      <Title level={2}>Configuración del sistema</Title>
-      <Text type="secondary" style={{ display: "block", marginBottom: 24 }}>
-        Ajustes generales, notificaciones, seguridad e integraciones.
-      </Text>
+      <PageHeader
+        title="Configuración"
+        description="Preferencias de interfaz y vista de parámetros operativos del servidor."
+      />
 
       <Card>
         <Tabs items={tabItems} />

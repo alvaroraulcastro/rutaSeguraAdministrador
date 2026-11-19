@@ -1,13 +1,10 @@
 import { CanalNotificacion } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
+import { enviarFcmLegacy } from '@/lib/fcm';
+import { tituloNotificacion } from '@/lib/plantillasNotificacion';
+import { TIPOS_NOTIFICACION, type TipoNotificacion } from '@/lib/tiposNotificacion';
 
-export const TIPOS_NOTIFICACION = {
-  EN_CAMINO: 'EN_CAMINO',
-  EN_PUERTA: 'EN_PUERTA',
-  LLEGADA_DESTINO: 'LLEGADA_DESTINO',
-} as const;
-
-type TipoNotificacion = (typeof TIPOS_NOTIFICACION)[keyof typeof TIPOS_NOTIFICACION];
+export { TIPOS_NOTIFICACION };
 
 interface EnviarNotificacionParams {
   viajeId: string;
@@ -16,12 +13,9 @@ interface EnviarNotificacionParams {
   mensaje: string;
   canal: CanalNotificacion;
   destinatario: string;
+  fcmToken?: string | null;
 }
 
-/**
- * Registra la notificación y simula/envía push si hay credenciales FCM configuradas.
- * Idempotente por (viajeId, pasajeroId, tipo).
- */
 export async function registrarYEnviarNotificacion(
   params: EnviarNotificacionParams
 ): Promise<{ creada: boolean; id?: string }> {
@@ -42,18 +36,19 @@ export async function registrarYEnviarNotificacion(
   const fcmKey = process.env.FCM_SERVER_KEY;
 
   if (params.canal === 'PUSH') {
-    if (fcmKey) {
-      try {
-        // Punto de integración FCM legacy (sustituir por HTTP v1 cuando haya service account).
-        console.info('[notificaciones.fcm]', {
-          destinatario: params.destinatario,
-          tipo: params.tipo,
-          mensaje: params.mensaje,
-        });
-      } catch (err) {
-        console.error('[notificaciones.fcm.error]', err);
-        estado = 'FALLIDO';
-      }
+    if (fcmKey && params.fcmToken) {
+      const ok = await enviarFcmLegacy({
+        serverKey: fcmKey,
+        token: params.fcmToken,
+        title: tituloNotificacion(params.tipo),
+        body: params.mensaje,
+      });
+      if (!ok) estado = 'FALLIDO';
+    } else if (fcmKey) {
+      console.info('[notificaciones.fcm.sin_token]', {
+        destinatario: params.destinatario,
+        tipo: params.tipo,
+      });
     } else {
       console.info('[notificaciones.mock]', params);
     }

@@ -27,8 +27,9 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import { getApiUrl } from "@/lib/api";
 import EmptyState from "@/components/EmptyState";
+import PageHeader from "@/components/PageHeader";
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 interface Pasajero {
   id: string;
@@ -245,16 +246,17 @@ export default function PasajerosClient() {
 
   return (
     <>
-      <div style={{ marginBottom: 24, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 16 }}>
-        <Title level={2} style={{ margin: 0 }}>
-          Pasajeros
-        </Title>
-        <Link href="/passengers/new">
-          <Button type="primary" icon={<PlusOutlined />} aria-label="Añadir pasajero">
-            Añadir Pasajero
-          </Button>
-        </Link>
-      </div>
+      <PageHeader
+        title="Pasajeros"
+        description="Administra domicilios, destinos y contactos de notificación."
+        extra={
+          <Link href="/passengers/new">
+            <Button type="primary" icon={<PlusOutlined />} aria-label="Añadir pasajero">
+              Añadir pasajero
+            </Button>
+          </Link>
+        }
+      />
 
       <Card
         title={`Total: ${pasajeros.length} pasajeros`}

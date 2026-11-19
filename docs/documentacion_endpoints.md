@@ -409,7 +409,34 @@ Nota: algunos endpoints del backend validan solo `X-API-Key` (no aceptan `Author
 
 ---
 
+## Módulo: Sistema
+
+### GET `/api/v1/health`
+
+- **Objetivo:** comprobar disponibilidad del API y conexión a PostgreSQL (monitoreo / Vercel).
+- **API Key:** no requerida.
+- **Respuestas:**
+  - `200` `{ "status": "ok", "db": "ok", "version": "abc1234", "timestamp": "..." }`
+  - `503` `{ "status": "degraded", "db": "error", ... }`
+
+### GET `/api/v1/config/operativa`
+
+- **Objetivo:** umbrales GPS y flag FCM (solo lectura; valores desde variables de entorno del servidor).
+- **API Key:** requerida (`X-API-Key` o `Authorization: Bearer`).
+- **Respuestas:**
+  - `200` `{ "gps": { "enCaminoMetros", "enPuertaMetros", "ubicacionIntervaloMinimoSegundos" }, "notificaciones": { "fcmConfigurado" } }`
+
+---
+
 ## Módulo: Viajes
+
+### GET `/api/v1/viajes/hoy`
+
+- **Objetivo:** viajes del día calendario en zona Chile (UTC-3/4 según fecha), filtrados por transportista si el rol no es `ADMIN`.
+- **API Key:** requerida (`X-API-Key` o `Authorization: Bearer`; CORS habilitado).
+- **Query:** `fecha` opcional (`YYYY-MM-DD`; por defecto hoy Chile).
+- **Respuestas:**
+  - `200` `{ "fecha": "2026-03-20", "viajes": [ ... ] }`
 
 ### GET `/api/v1/viajes`
 
@@ -432,6 +459,8 @@ Nota: algunos endpoints del backend validan solo `X-API-Key` (no aceptan `Author
   - `fecha` es opcional; si no se envía, el backend usa `new Date()`.
 - **Respuestas:**
   - `201` `{ ...viaje }`
+  - `403` `{ "error": "No autorizado para esta ruta" }` (transportista ajeno)
+  - `404` `{ "error": "Ruta no encontrada" }`
   - `400` `{ "error": [...] }`
 
 ### GET `/api/v1/viajes/:id`
@@ -443,6 +472,7 @@ Nota: algunos endpoints del backend validan solo `X-API-Key` (no aceptan `Author
   - `id` (string)
 - **Respuestas:**
   - `200` `{ ...viaje }`
+  - `403` `{ "error": "No autorizado para este viaje" }`
   - `404` `{ "error": "Viaje no encontrado" }`
 
 ### PUT `/api/v1/viajes/:id`
@@ -460,6 +490,7 @@ Nota: algunos endpoints del backend validan solo `X-API-Key` (no aceptan `Author
 - **Respuestas:**
   - `200` `{ ...viaje }`
   - `400` `{ "error": [...] }`
+  - `403` `{ "error": "No autorizado para este viaje" }`
   - `404` `{ "error": "Viaje no encontrado" }`
 
 ### DELETE `/api/v1/viajes/:id`
@@ -471,6 +502,7 @@ Nota: algunos endpoints del backend validan solo `X-API-Key` (no aceptan `Author
   - `id` (string)
 - **Respuestas:**
   - `204` sin body
+  - `403` `{ "error": "No autorizado para este viaje" }`
   - `404` `{ "error": "Viaje no encontrado" }`
 
 ### POST `/api/v1/viajes/:id/location`
@@ -486,6 +518,8 @@ Nota: algunos endpoints del backend validan solo `X-API-Key` (no aceptan `Author
   { "lat": -33.45678, "lng": -70.64821 }
   ```
 - **Respuestas:**
-  - `200` `{ "message": "Ubicación recibida" }`
+  - `200` `{ "message": "Ubicación procesada", "distanciaProximaParadaMetros", "paradaActualOrden", "notificacionesNuevas", "viajeCompletado" }`
   - `400` `{ "error": [...] }`
+  - `403` `{ "error": "No autorizado para este viaje" }`
   - `404` `{ "error": "Viaje no encontrado o no está en curso" }`
+  - `429` `{ "error": "Demasiadas actualizaciones GPS; espera unos segundos" }`

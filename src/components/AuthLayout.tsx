@@ -3,7 +3,7 @@
 import React from "react";
 import { Card, Typography } from "antd";
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 interface AuthLayoutProps {
   title: string;
@@ -48,9 +48,17 @@ export default function AuthLayout({ title, subtitle, children }: AuthLayoutProp
           >
             RS
           </div>
-          <Title level={2} style={{ color: "#fff", margin: 0, fontWeight: 600 }}>
+          <h2
+            style={{
+              color: "#fff",
+              margin: 0,
+              fontWeight: 600,
+              fontSize: "1.875rem",
+              lineHeight: 1.35,
+            }}
+          >
             RutaSegura
-          </Title>
+          </h2>
           <Text style={{ color: "rgba(255,255,255,0.88)", fontSize: 14 }}>
             Panel de administración de transporte
           </Text>

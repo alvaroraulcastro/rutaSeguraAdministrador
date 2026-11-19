@@ -8,7 +8,8 @@
     "vercel-build": "prisma generate && prisma db push && next build --webpack",
     "db:push": "prisma db push",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "smoke": "tsx scripts/smoke-lib.mjs && tsx scripts/smoke-api.mjs"
   },
   "prisma": {
     "seed": "npx tsx prisma/seed.ts"
